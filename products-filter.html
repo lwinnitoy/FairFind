@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FairFind - Ethical & Affordable Products</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <h1>FairFind</h1>
+            </div>
+            <nav class="nav">
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="products.html">Products</a></li>
+                    <li><a href="companies.html">Companies</a></li>
+                    <li><a href="about.html">About</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Left filter panel (always visible) -->
+    <aside class="filter-panel" id="filterPanel" aria-hidden="false">
+        <h3>Filters</h3>
+
+        <div class="filter-section">
+            <h4>Categories</h4>
+            <label><input type="checkbox" name="filter" value="ethical"> Ethical</label>
+            <label><input type="checkbox" name="filter" value="affordable"> Affordable</label>
+            <label><input type="checkbox" name="filter" value="recycled"> Recycled</label>
+            <label><input type="checkbox" name="filter" value="locally sourced"> Locally sourced</label>
+        </div>
+
+        <div class="filter-section">
+            <h4>Price range</h4>
+            <div class="price-range">
+                <input type="number" id="priceMin" placeholder="Min" min="0">
+                <input type="number" id="priceMax" placeholder="Max" min="0">
+            </div>
+            <button id="applyPrice" class="small-btn">Apply</button>
+        </div>
+
+        <div class="filter-section">
+            <h4>Sort by</h4>
+            <select id="sortSelect">
+                <option value="">Default</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="name-asc">Name A → Z</option>
+                <option value="name-desc">Name Z → A</option>
+            </select>
+        </div>
+
+        <div class="filter-actions">
+            <button id="clearFilters" class="small-btn">Clear</button>
+        </div>
+    </aside>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h2>Discover Ethical and Affordable Products</h2>
+            <p>Browse our curated list of products that align with your values and budget</p>
+            <div class="search-box">
+                <button class="filter-button" aria-label="Open filters">Filter</button>
+                <input type="text" placeholder="Search for a product" class="search-input">
+                <button class="search-button">Search</button>
+                
+            </div>
+        </div>
+    </section>
+
+    <!-- Product Listings Section -->
+    <section id="product-listings" class="product-listings">
+        <div class="container">
+            <h2>Featured Products</h2>
+            <div class="product-grid">
+                <!-- Product 1 -->
+                <div class="product-card">
+                    <div class="product-image-placeholder">
+                        <span>Product Image</span>
+                    </div>
+                    <h3>Ethical Product A</h3>
+                    <p class="price">$45.00</p>
+                    <ul class="product-features">
+                        <li>High quality</li>
+                        <li>Fair trade certified</li>
+                        <li>Eco-friendly packaging</li>
+                    </ul>
+                    <div class="badges">
+                        <span class="badge ethical">Ethical</span>
+                        <span class="badge affordable">Affordable</span>
+                    </div>
+                </div>
+
+                <!-- Product 2 -->
+                <div class="product-card">
+                    <div class="product-image-placeholder">
+                        <span>Product Image</span>
+                    </div>
+                    <h3>Ethical Product B</h3>
+                    <p class="price">$30.00</p>
+                    <ul class="product-features">
+                        <li>Good quality</li>
+                        <li>Locally sourced materials</li>
+                        <li>Supports community artisans</li>
+                    </ul>
+                    <div class="badges">
+                        <span class="badge ethical">Ethical</span>
+                        <span class="badge affordable">Affordable</span>
+                    </div>
+                </div>
+
+                <!-- Product 3 -->
+                <div class="product-card">
+                    <div class="product-image-placeholder">
+                        <span>Product Image</span>
+                    </div>
+                    <h3>Ethical Product C</h3>
+                    <p class="price">$60.00</p>
+                    <ul class="product-features">
+                        <li>Premium quality</li>
+                        <li>Recycled materials</li>
+                        <li>Supports environmental initiatives</li>
+                    </ul>
+                    <div class="badges">
+                        <span class="badge ethical">Ethical</span>
+                        <span class="badge affordable">Affordable</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+<script>
+// Filtering logic
+const filterPanel = document.getElementById('filterPanel');
+const productGrid = document.querySelector('.product-grid');
+const productCards = Array.from(document.querySelectorAll('.product-card'));
+
+function readActiveFilters() {
+    const checked = Array.from(document.querySelectorAll('input[name="filter"]:checked')).map(i=>i.value.toLowerCase());
+    const min = parseFloat(document.getElementById('priceMin').value) || 0;
+    const maxVal = document.getElementById('priceMax').value;
+    const max = maxVal ? parseFloat(maxVal) : Infinity;
+    const sort = document.getElementById('sortSelect').value;
+    return { checked, min, max, sort };
+}
+
+function getPriceFromCard(card) {
+    const p = card.querySelector('.price');
+    if(!p) return Infinity;
+    const t = p.textContent.replace(/[^0-9\.]/g,'');
+    return parseFloat(t) || Infinity;
+}
+
+function getBadgesFromCard(card) {
+    return Array.from(card.querySelectorAll('.badges .badge')).map(b => b.textContent.toLowerCase());
+}
+
+function applyFilters() {
+    const { checked, min, max, sort } = readActiveFilters();
+
+    let visible = productCards.filter(card => {
+        const price = getPriceFromCard(card);
+        if(price < min || price > max) return false;
+        const badges = getBadgesFromCard(card);
+        if(checked.length === 0) return true;
+        return checked.every(c => badges.includes(c));
+    });
+
+    // Clear grid and re-append in sorted order
+    productGrid.innerHTML = '';
+
+    if(sort === 'price-asc') {
+        visible.sort((a,b)=> getPriceFromCard(a) - getPriceFromCard(b));
+    } else if(sort === 'price-desc') {
+        visible.sort((a,b)=> getPriceFromCard(b) - getPriceFromCard(a));
+    } else if(sort === 'name-asc') {
+        visible.sort((a,b)=> a.querySelector('h3').textContent.localeCompare(b.querySelector('h3').textContent));
+    } else if(sort === 'name-desc') {
+        visible.sort((a,b)=> b.querySelector('h3').textContent.localeCompare(a.querySelector('h3').textContent));
+    }
+
+    visible.forEach(v => productGrid.appendChild(v));
+}
+
+// Wire inputs
+document.querySelectorAll('input[name="filter"]').forEach(i=> i.addEventListener('change', applyFilters));
+document.getElementById('applyPrice').addEventListener('click', applyFilters);
+document.getElementById('sortSelect').addEventListener('change', applyFilters);
+document.getElementById('clearFilters').addEventListener('click', ()=>{
+    document.querySelectorAll('input[name="filter"]').forEach(i=> i.checked = false);
+    document.getElementById('priceMin').value = '';
+    document.getElementById('priceMax').value = '';
+    document.getElementById('sortSelect').value = '';
+    applyFilters();
+});
+
+// initial apply
+applyFilters();
+</script>
+    </body>
+</html>
