@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FairFind - Ethical Clothing Alternatives</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Layout Adjustments for this page */
+        .original-banner {
+            background: #fdfdfd;
+            border: 2px dashed #999;
+            border-radius: 4px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .original-banner::before {
+            content: "Original Product";
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: #fff;
+            border: 2px dashed #999;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 2px 6px;
+        }
+
+        .comparison-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+            margin-bottom: 2rem;
+        }
+
+        .product-card {
+            position: relative;
+            text-align: center;
+        }
+
+        .product-card.budget {
+            background: #fffef7;
+            border: 2px dashed #d6b88a;
+        }
+
+        .product-card.ethical {
+            background: #f7fff7;
+            border: 2px dashed #9c9;
+        }
+
+        .product-card.budget::before,
+        .product-card.ethical::before {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: #fff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 2px;
+        }
+
+        .product-card.budget::before {
+            content: "Budget Option";
+            border: 2px dashed #d6b88a;
+        }
+
+        .product-card.ethical::before {
+            content: "Ethical Option";
+            border: 2px dashed #9c9;
+        }
+
+        /* Ghost placeholders */
+        .ghost-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+            margin-top: 1.5rem;
+        }
+
+        .ghost-box {
+            height: 220px;
+            border: 2px dashed #eee;
+            background: #fafafa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <h1>FairFind</h1>
+            </div>
+            <nav class="nav">
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="products.html">Products</a></li>
+                    <li><a href="companies.html">Companies</a></li>
+                    <li><a href="about.html">About</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="container">
+            <h2>Fair Alternatives to Designer Clothing</h2>
+            <p>Find stylish, affordable, and ethical options without compromise</p>
+
+            <div class="search-box">
+                <input type="text" placeholder="Search for a clothing item..." class="search-input">
+                <button class="search-button">Search</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Product Comparison -->
+    <section class="product-comparison">
+        <div class="container">
+            <h2>Example: Oxford Shirt Comparison</h2>
+
+            <!-- Original Banner -->
+            <div class="original-banner">
+                <div class="product-image-placeholder">
+                    <span>Designer Oxford Shirt</span>
+                </div>
+                <h3>BrandName Tailored Oxford</h3>
+                <p class="price">$38.00</p>
+                <ul class="product-features">
+                    <li>100% cotton</li>
+                    <li>Classic slim fit</li>
+                    <li>Imported materials</li>
+                </ul>
+            </div>
+
+            <!-- Alternatives Row -->
+            <div class="comparison-row">
+                <!-- Budget Option -->
+                <div class="product-card budget">
+                    <div class="product-image-placeholder">
+                        <span>Budget Shirt</span>
+                    </div>
+                    <h3>Everyday Basics Oxford</h3>
+                    <p class="price">$25.00</p>
+                    <ul class="product-features">
+                        <li>60% cotton blend</li>
+                        <li>Durable fabric</li>
+                        <li>Simple design</li>
+                    </ul>
+                </div>
+
+                <!-- Ethical Option -->
+                <div class="product-card ethical">
+                    <div class="product-image-placeholder">
+                        <span>Ethical Shirt</span>
+                    </div>
+                    <h3>Conscious Threads Oxford</h3>
+                    <p class="price">$32.00</p>
+                    <ul class="product-features">
+                        <li>Organic cotton</li>
+                        <li>Fair trade certified</li>
+                        <li>Eco-friendly dyes</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Ghost placeholders -->
+            <div class="ghost-grid">
+                <div class="ghost-box">Future Product</div>
+                <div class="ghost-box">Future Product</div>
+                <div class="ghost-box">Future Product</div>
+            </div>
+        </div>
+    </section>
+</body>
+</html>
