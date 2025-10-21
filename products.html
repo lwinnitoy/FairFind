@@ -127,7 +127,7 @@
     <!-- Product Listings Section -->
     <section id="product-listings" class="product-listings">
         <div class="container">
-            <h2>Featured Products</h2>
+            <h2 id="results-heading">Featured Products</h2>
             <div class="product-grid">
                 <!-- Product 1 -->
                 <div class="product-card">
@@ -189,6 +189,8 @@
     <!-- ...existing code... -->
 
     <!-- Script to toggle the filter panel -->
+     <!--DISGUSTING ASHTON CODE-->
+     
     <script>
         (function () {
             const openBtn = document.getElementById('filterButton');
@@ -306,5 +308,31 @@
             }
         })();
     </script>
+    <!--ELEGANT GAVIN CODE-->
+<script>
+document.querySelector('.search-button').addEventListener('click', function () {
+  const q = document.querySelector('.search-input').value.trim();
+  if (!q) return; // ignore empty
+  location.href = 'products.html?q=' + encodeURIComponent(q);
+  
+});
+document.querySelector('.search-input').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    document.querySelector('.search-button').click();
+  }
+});
+</script>
+<script>
+const params = new URLSearchParams(location.search);
+const q = (params.get('q') || '').trim();
+if (q) {
+  document.getElementById('results-heading').textContent = 'Results for: ' + q;
+  // TODO: run your search function here (filter your product list, call an API, etc.)
+  // Example placeholder:
+  
+  document.getElementById('results-container').textContent = 'Searching for "' + q + '"...';
+}
+</script>
 </body>
 </html>

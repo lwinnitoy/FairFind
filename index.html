@@ -121,6 +121,18 @@
         </div>
     </section>
 
-
+    <script>
+document.querySelector('.search-button').addEventListener('click', function () {
+  const q = document.querySelector('.search-input').value.trim();
+  if (!q) return; // ignore empty
+  location.href = 'products.html?q=' + encodeURIComponent(q);
+});
+document.querySelector('.search-input').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    document.querySelector('.search-button').click();
+  }
+});
+</script>
 </body>
 </html>
