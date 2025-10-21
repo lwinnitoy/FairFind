@@ -1,251 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Product Finder</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-      background: #ffffff;
-      color: #111;
-      line-height: 1.4;
-      padding: 20px;
-    }
-
-    header {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    h1 {
-      font-size: 2em;
-      margin-bottom: 10px;
-    }
-
-    .search-section {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 25px;
-    }
-
-    .search-section input, .search-section select, .search-section button {
-      padding: 10px;
-      font-size: 1em;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-
-    .search-section input {
-      width: 220px;
-    }
-
-    .search-section button {
-      background: #111;
-      color: white;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-
-    .search-section button:hover {
-      background: #444;
-    }
-
-    #productsContainer {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 20px;
-      justify-items: center;
-    }
-
-    .product-card {
-      width: 100%;
-      background: #f8f8f8;
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-      text-align: center;
-      transition: transform 0.2s;
-    }
-
-    .product-card:hover {
-      transform: translateY(-3px);
-    }
-
-    .product-image-placeholder img {
-      width: 100%;
-      height: 150px;
-      object-fit: cover;
-      border-radius: 8px;
-    }
-
-    .price {
-      color: #1a8917;
-      font-weight: bold;
-      margin-top: 8px;
-      font-size: 1.1em;
-    }
-
-    .product-features {
-      list-style-type: none;
-      margin-top: 10px;
-      font-size: 0.9em;
-    }
-
-    .product-features li {
-      margin-bottom: 4px;
-    }
-
-    footer {
-      text-align: center;
-      margin-top: 40px;
-      font-size: 0.9em;
-      color: #777;
-    }
-
-    .loading {
-      text-align: center;
-      color: #555;
-      font-style: italic;
-      margin-top: 40px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Finder</title>
+<style>
+body { font-family: Arial, sans-serif; background:#f4f4f4; color:#333; margin:0; padding:0; }
+.container { max-width:1200px; margin:0 auto; padding:20px; }
+h1 { text-align:center; margin-bottom:20px; }
+.search-box { display:flex; justify-content:center; gap:10px; margin-bottom:20px; }
+.search-box input { padding:10px; width:300px; border:2px solid #bbb; border-radius:4px; }
+.search-box button { padding:10px 15px; border:none; background:#007bff; color:#fff; border-radius:4px; cursor:pointer; }
+.search-box button:hover { background:#0056b3; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:20px; }
+.card { background:#fff; border-radius:6px; padding:15px; border:2px solid #ccc; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+.card img { width:100%; height:180px; object-fit:cover; margin-bottom:10px; border-radius:4px; }
+.card h3 { margin:0 0 5px 0; font-size:1.2rem; }
+.card p { margin:0 0 5px 0; color:#555; }
+.card .price { color:#007bff; font-weight:700; font-size:1.1rem; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>Product Finder</h1>
-    <p>Search for example products with realistic images and filters</p>
-  </header>
 
-  <section class="search-section">
-    <input type="text" id="searchInput" placeholder="Search by name or description..." />
-    <select id="categoryFilter">
-      <option value="">All Categories</option>
-      <option value="Clothing">Clothing</option>
-      <option value="Electronics">Electronics</option>
-      <option value="Accessories">Accessories</option>
-      <option value="Home">Home</option>
-      <option value="Outdoor">Outdoor</option>
-      <option value="Beauty">Beauty</option>
-    </select>
-    <select id="priceFilter">
-      <option value="">All Prices</option>
-      <option value="low">Under $50</option>
-      <option value="mid">$50 - $100</option>
-      <option value="high">Over $100</option>
-    </select>
-    <button id="searchButton">Search</button>
-  </section>
+<div class="container">
+  <h1>Product Finder</h1>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search by description...">
+    <button id="searchBtn">Search</button>
+  </div>
+  <div class="grid" id="productList"></div>
+</div>
 
-  <section id="productsContainer">
-    <p style="text-align:center; color:#666;">Search for products to begin.</p>
-  </section>
+<script>
+const PIXABAY_KEY = ""; // <-- Replace with your Pixabay API key
 
-  <footer>
-    <p>© 2025 Example Product Finder</p>
-  </footer>
+async function searchProducts() {
+  const query = document.getElementById("searchInput").value.trim() || "shirt";
+  
+  // Fetch images from Pixabay
+  const res = await fetch(`https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=8`);
+  const data = await res.json();
+  
+  const categories = ["Shirt","Shoes","Jacket","Hat"];
+  const adjectives = ["Premium","Budget","Stylish","Eco","Classic","Modern"];
+  
+  const productList = document.getElementById("productList");
+  productList.innerHTML = "";
 
-  <script>
-    const productsContainer = document.getElementById("productsContainer");
-    const searchButton = document.getElementById("searchButton");
-    const searchInput = document.getElementById("searchInput");
-    const categoryFilter = document.getElementById("categoryFilter");
-    const priceFilter = document.getElementById("priceFilter");
+  if(data.hits.length === 0){
+    productList.innerHTML = "<p style='grid-column:1/-1;text-align:center;'>No products found.</p>";
+    return;
+  }
 
-    function generateFakeProducts(query) {
-      const keywords = query.split(" ");
-      const num = Math.floor(Math.random() * 4) + 4; // 4–7 products
-      const products = [];
+  data.hits.forEach((img, i) => {
+    const category = categories[i % categories.length];
+    const name = `${adjectives[i % adjectives.length]} ${category} #${i+1}`;
+    const price = (Math.random()*120 + 10).toFixed(2);
+    const desc = `A ${adjectives[i % adjectives.length].toLowerCase()} ${category.toLowerCase()} perfect for ${query}.`;
+    
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <img src="${img.webformatURL}" alt="${name}">
+      <h3>${name}</h3>
+      <p>${desc}</p>
+      <p class="price">$${price}</p>
+    `;
+    productList.appendChild(card);
+  });
+}
 
-      const categories = ["Clothing", "Electronics", "Accessories", "Home", "Outdoor", "Beauty"];
-      const adjectives = ["Premium", "Budget", "Stylish", "Eco", "Classic", "Modern"];
-      const endings = ["Edition", "Collection", "Series", "Model", "Design", "Set"];
+document.getElementById("searchBtn").addEventListener("click", searchProducts);
+document.getElementById("searchInput").addEventListener("keydown", e => {
+  if(e.key === "Enter") searchProducts();
+});
 
-      for (let i = 0; i < num; i++) {
-        const word = keywords[Math.floor(Math.random() * keywords.length)] || "item";
-        const name = `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${word} ${endings[Math.floor(Math.random() * endings.length)]}`;
-        const price = (Math.random() * 150 + 10).toFixed(2);
-        const category = categories[Math.floor(Math.random() * categories.length)];
+// Initial load
+searchProducts();
+</script>
 
-        // ✅ Unsplash: realistic images by keyword
-        const imageUrl = `https://source.unsplash.com/600x400/?${encodeURIComponent(query)},product`;
-
-        const description = `A ${adjectives[Math.floor(Math.random() * adjectives.length)].toLowerCase()} ${word} perfect for ${category.toLowerCase()} enthusiasts.`;
-
-        products.push({ name, price, imageUrl, description, category });
-      }
-
-      return products;
-    }
-
-    function filterProducts(products) {
-      const selectedCategory = categoryFilter.value;
-      const selectedPrice = priceFilter.value;
-
-      return products.filter(p => {
-        const priceNum = parseFloat(p.price);
-        let priceMatch = true;
-
-        if (selectedPrice === "low") priceMatch = priceNum < 50;
-        else if (selectedPrice === "mid") priceMatch = priceNum >= 50 && priceNum <= 100;
-        else if (selectedPrice === "high") priceMatch = priceNum > 100;
-
-        const categoryMatch = selectedCategory ? p.category === selectedCategory : true;
-        return priceMatch && categoryMatch;
-      });
-    }
-
-    function displayProducts(products) {
-      productsContainer.innerHTML = "";
-      if (products.length === 0) {
-        productsContainer.innerHTML = "<p style='text-align:center;'>No products found. Try another search.</p>";
-        return;
-      }
-
-      products.forEach(p => {
-        const card = document.createElement("div");
-        card.classList.add("product-card");
-
-        card.innerHTML = `
-          <div class="product-image-placeholder">
-            <img href="${p.imageUrl}" alt="${p.name}">
-          </div>
-          <h3>${p.name}</h3>
-          <p class="price">$${p.price}</p>
-          <ul class="product-features">
-            <li>Category: ${p.category}</li>
-            <li>${p.description}</li>
-          </ul>
-        `;
-        productsContainer.appendChild(card);
-      });
-    }
-
-    searchButton.addEventListener("click", async () => {
-      const query = searchInput.value.trim();
-      if (!query) return alert("Please enter a search term!");
-      
-      productsContainer.innerHTML = "<p class='loading'>Generating products...</p>";
-
-      // Simulate short delay for realism
-      await new Promise(res => setTimeout(res, 800));
-
-      const results = generateFakeProducts(query);
-      const filtered = filterProducts(results);
-      displayProducts(filtered);
-    });
-
-    searchInput.addEventListener("keydown", e => {
-      if (e.key === "Enter") searchButton.click();
-    });
-  </script>
 </body>
 </html>
