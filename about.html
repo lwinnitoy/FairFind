@@ -18,12 +18,18 @@
 
         body { background: linear-gradient(180deg,#f6faf8 0%, #ffffff 60%); color:#0f1720; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
 
+        /* Top bar: subtle branded color with good contrast for links */
         .site-header {
-            background: transparent;
+            background: linear-gradient(90deg, rgba(31,143,107,0.14), rgba(31,143,107,0.08));
             padding: 1rem 0;
+            border-bottom: 1px solid rgba(31,143,107,0.08);
         }
         .site-header .container { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
-        .site-header .logo h1 { margin:0; font-size:1.15rem; color:var(--brand); letter-spacing:0.2px; }
+        .site-header .logo h1 { margin:0; font-size:1.15rem; color:#0f1720; /* keep brand color for logo text */ }
+        /* nav links on the colored bar */
+        .site-header .nav a { color: #0f1720; text-decoration:none; padding:.25rem .4rem; border-radius:6px; }
+        .site-header .nav a[aria-current="page"] { background: rgba(31,143,107,0.08); color: var(--brand); font-weight:600; }
+        .site-header .nav a:hover { background: rgba(31,143,107,0.06); color: var(--brand); }
 
         .hero-about {
             background: linear-gradient(90deg, rgba(31,143,107,0.06), rgba(31,143,107,0.02));

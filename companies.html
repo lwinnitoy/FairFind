@@ -5,19 +5,76 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FairFind - Ethical Companies</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        :root{
+            --brand:#1f8f6b;
+            --muted:#6b7280;
+            --card-bg: #ffffff;
+            --surface: #f7faf8;
+            --shadow: 0 6px 18px rgba(31,31,31,0.08);
+            --radius: 12px;
+        }
+
+        body { background: linear-gradient(180deg,#f6faf8 0%, #ffffff 60%); color:#0f1720; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+
+        /* Top bar: subtle branded color with good contrast for links */
+        .site-header {
+            background: linear-gradient(90deg, rgba(31,143,107,0.14), rgba(31,143,107,0.08));
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(31,143,107,0.08);
+        }
+        .site-header .container { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+        .site-header .logo h1 { margin:0; font-size:1.15rem; color:#0f1720; }
+        .site-header .nav a { color: #0f1720; text-decoration:none; padding:.25rem .4rem; border-radius:6px; }
+        .site-header .nav a[aria-current="page"] { background: rgba(31,143,107,0.08); color: var(--brand); font-weight:600; }
+        .site-header .nav a:hover { background: rgba(31,143,107,0.06); color: var(--brand); }
+
+        .hero {
+            margin: 1.25rem 1.25rem;
+            padding: 1.5rem;
+            border-radius: 12px;
+            background: linear-gradient(180deg, #ffffff, #f7fff7);
+            box-shadow: var(--shadow);
+        }
+
+        .companies .company-list {
+            display:grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap:1rem;
+            margin-top:1rem;
+        }
+        .company-card {
+            background: var(--card-bg);
+            padding:1rem;
+            border-radius:10px;
+            box-shadow: var(--shadow);
+        }
+
+        footer.site-footer {
+            margin-top:2rem; padding:1.25rem 0; color:var(--muted);
+            border-top:1px solid #eef3ef;
+        }
+
+        @media (max-width: 900px) {
+            .companies .company-list { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 640px) {
+            .companies .company-list { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
+    <!-- Header (styled like about page) -->
+    <header class="site-header header">
         <div class="container">
             <div class="logo">
                 <h1>FairFind</h1>
             </div>
-            <nav class="nav">
-                <ul>
+            <nav class="nav" aria-label="Primary">
+                <ul style="display:flex;gap:1rem;list-style:none;margin:0;padding:0;">
                     <li><a href="index.html">Home</a></li>
                     <li><a href="products.html">Products</a></li>
-                    <li><a href="companies.html">Companies</a></li>
+                    <li><a href="companies.html" aria-current="page">Companies</a></li>
                     <li><a href="about.html">About</a></li>
                 </ul>
             </nav>
@@ -26,7 +83,7 @@
 
     <!-- Hero Section -->
     <section class="hero">
-        <div class="container">
+        <div class="container" style="text-align:center;">
             <h2>Discover Ethical Companies</h2>
             <p>Find more companies that value sustainability, ethical practices and where they are based</p>
         </div>
@@ -53,5 +110,17 @@
         </div>
     </section>
 
+    <footer class="site-footer" role="contentinfo">
+        <div class="container" style="max-width:1100px;margin:0 auto;padding:1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+            <small>© <span id="year"></span> FairFind — helping you choose better.</small>
+            <nav aria-label="Footer">
+                <a href="privacy.html" style="color:var(--muted);margin-left:.75rem;">Privacy</a>
+            </nav>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
 </body>
 </html>

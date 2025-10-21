@@ -7,59 +7,132 @@
     <link rel="stylesheet" href="styles.css">
     
     <style>
-        /* overlay */
+        :root{
+            --brand:#1f8f6b;
+            --muted:#6b7280;
+            --card-bg:#ffffff;
+            --surface:#f7faf8;
+            --shadow:0 6px 18px rgba(31,31,31,0.08);
+            --radius:12px;
+        }
+
+        /* page baseline */
+        html,body{height:100%}
+        body {
+            margin:0;
+            font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            background: linear-gradient(180deg,#f6faf8 0%, #ffffff 60%);
+            color:#0f1720;
+            -webkit-font-smoothing:antialiased;
+            -moz-osx-font-smoothing:grayscale;
+        }
+
+        /* consistent centered container used across pages */
+        .container { max-width:1100px; margin:0 auto; padding:0 1rem; box-sizing:border-box; }
+
+        /* Top bar (matches about page) */
+        .header, .site-header {
+            background: linear-gradient(90deg, rgba(31,143,107,0.14), rgba(31,143,107,0.08));
+            padding:1rem 0;
+            border-bottom:1px solid rgba(31,143,107,0.08);
+        }
+        .header .container, .site-header .container { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+        .logo h1 { margin:0; font-size:1.15rem; color:#0f1720; }
+        .nav ul { margin:0; padding:0; list-style:none; display:flex; gap:1rem; }
+        .nav a { color:#0f1720; text-decoration:none; padding:.25rem .4rem; border-radius:6px; }
+        .nav a[aria-current="page"] { background: rgba(31,143,107,0.08); color: var(--brand); font-weight:600; }
+        .nav a:hover { background: rgba(31,143,107,0.06); color: var(--brand); }
+
+        /* Hero */
+        .hero {
+            margin:1.25rem 0;
+            padding:1.5rem;
+            border-radius:var(--radius);
+            background: linear-gradient(180deg, #ffffff, #f7fff7);
+            box-shadow: var(--shadow);
+        }
+        .hero .container { display:flex; flex-direction:column; align-items:center; text-align:center; gap:.5rem; }
+        .hero h2 { margin:0; font-size:1.6rem; }
+        .hero p { margin:0; color:var(--muted); max-width:820px; }
+
+        .search-box { display:flex; gap:.5rem; margin-top:.75rem; width:100%; justify-content:center; }
+        .search-box .search-input { padding:.5rem .6rem; border-radius:8px; border:1px solid #e6f3ef; min-width:240px; box-sizing:border-box; }
+        .search-box .search-button, .search-box .filter-button { padding:.5rem .75rem; border-radius:8px; border:0; background:var(--brand); color:#fff; cursor:pointer; }
+        .search-box .filter-button { background:transparent; color:var(--brand); border:1px solid rgba(31,143,107,0.12); }
+
+        /* Product grid */
+        .product-listings .product-grid, .product-grid {
+            display:grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap:1rem;
+            margin-top:1rem;
+        }
+        .product-card {
+            background:var(--card-bg);
+            padding:1rem;
+            border-radius:10px;
+            box-shadow: var(--shadow);
+            display:flex;
+            flex-direction:column;
+            gap:.5rem;
+        }
+        .product-image-placeholder { background:#f3faf6; border-radius:8px; padding:1.5rem; display:grid; place-items:center; color:var(--muted); }
+
+        .price { font-weight:600; color:#0f1720; }
+
+        /* Footer */
+        footer.site-footer { margin-top:2rem; padding:1.25rem 0; color:var(--muted); border-top:1px solid #eef3ef; }
+
+        /* overlay & left-side filter panel (kept from products page) */
         .filter-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.4);
+            background: transparent; /* no grey overlay */
             opacity: 0;
             visibility: hidden;
             transition: opacity .28s ease;
             z-index: 999;
+            pointer-events: none; /* allow interacting with page under panel */
         }
         .filter-overlay.open {
             opacity: 1;
             visibility: visible;
+            pointer-events: none;
         }
 
-        /* panel */
+        /* Reduced width so panel doesn't overlap product cards */
         .filter-panel {
             position: fixed;
             top: 0;
-            left: -340px; /* hidden off-screen */
-            width: 320px;
+            left: -260px;         /* match negative offset to width so it's hidden */
+            width: 260px;         /* reduced from 320px */
             max-width: 100%;
+            min-width: 220px;     /* keep a sensible minimum on narrow desktops */
             height: 100%;
             background: #fff;
-            box-shadow: 2px 0 12px rgba(0,0,0,0.2);
+            box-shadow: 1px 0 10px rgba(0,0,0,0.12); /* slightly lighter shadow */
             transition: left .28s ease;
             z-index: 1000;
             padding: 1rem;
             overflow-y: auto;
         }
-        .filter-panel.open {
-            left: 0;
-        }
-
-        .filter-panel .close-btn {
-            background: none;
-            border: 0;
-            font-size: 1.6rem;
-            line-height: 1;
-            cursor: pointer;
-        }
-
-        /* small screens: full width */
-        @media (max-width: 420px) {
-            .filter-panel { width: 100%; left: -100%; }
-            .filter-panel.open { left: 0; }
-        }
-
-        /* small niceties for filter content */
+        .filter-panel.open { left: 0; }
+        .filter-panel .close-btn { background:none; border:0; font-size:1.6rem; line-height:1; cursor:pointer; }
         .filter-section { margin: 0.75rem 0; }
         .filter-section label { display:block; font-weight:600; margin-bottom:0.35rem; }
         .filter-actions { display:flex; gap:.5rem; margin-top:1rem; }
         .filter-actions button { flex:1; padding:.5rem; }
+
+        /* responsive */
+        @media (max-width: 900px) {
+            .product-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 640px) {
+            .product-grid { grid-template-columns: 1fr; }
+            .hero .container { align-items:flex-start; text-align:left; }
+            .search-box { justify-content:flex-start; }
+            .filter-panel { width:100%; left:-100%; min-width: auto; }
+        }
     </style>
 </head>
 <body>
@@ -72,7 +145,7 @@
             <nav class="nav">
                 <ul>
                     <li><a href="index.html">Home</a></li>
-                    <li><a href="products.html">Products</a></li>
+                    <li><a href="products.html" aria-current="page">Products</a></li>
                     <li><a href="companies.html">Companies</a></li>
                     <li><a href="about.html">About</a></li>
                 </ul>
@@ -186,8 +259,6 @@
         </div>
     </section>
 
-    <!-- ...existing code... -->
-
     <!-- Script to toggle the filter panel -->
     <script>
         (function () {
@@ -204,10 +275,7 @@
                 overlay.classList.add('open');
                 panel.setAttribute('aria-hidden', 'false');
                 overlay.setAttribute('aria-hidden', 'false');
-                document.body.style.overflow = 'hidden';
-                // focus first input for accessibility
                 if (firstFocusable) firstFocusable.focus();
-                // trap focus minimally by focusing close button when tabbing past last control could be added later
             }
 
             function closePanel() {
@@ -215,13 +283,30 @@
                 overlay.classList.remove('open');
                 panel.setAttribute('aria-hidden', 'true');
                 overlay.setAttribute('aria-hidden', 'true');
-                document.body.style.overflow = '';
                 openBtn.focus();
             }
 
-            openBtn.addEventListener('click', openPanel);
+            function togglePanel() {
+                if (panel.classList.contains('open')) {
+                    closePanel();
+                } else {
+                    openPanel();
+                }
+            }
+
+            // toggle when clicking the filter button
+            openBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                togglePanel();
+            });
+
             closeBtn.addEventListener('click', closePanel);
-            overlay.addEventListener('click', closePanel);
+
+            // keep overlay non-blocking; optional: allow overlay click to close
+            overlay.addEventListener('click', function () {
+                // close only if the overlay is visible and pointer-events are enabled
+                if (panel.classList.contains('open')) closePanel();
+            });
 
             // close with Esc
             document.addEventListener('keydown', function (e) {
@@ -232,10 +317,8 @@
 
             // simple apply/clear handlers (no backend logic here)
             applyBtn.addEventListener('click', function () {
-                // gather filters and close (hook into actual filtering logic as needed)
                 const form = document.getElementById('filterForm');
                 const data = new FormData(form);
-                // example: console.log([...data.entries()]);
                 closePanel();
             });
 
