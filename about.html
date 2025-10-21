@@ -1,48 +1,204 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>About — FairFind</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Page-specific improvements - keeps global styles in styles.css */
+        :root{
+            --brand:#1f8f6b;
+            --muted:#6b7280;
+            --card-bg: #ffffff;
+            --surface: #f7faf8;
+            --shadow: 0 6px 18px rgba(31,31,31,0.08);
+            --radius: 12px;
+        }
+
+        body { background: linear-gradient(180deg,#f6faf8 0%, #ffffff 60%); color:#0f1720; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+
+        .site-header {
+            background: transparent;
+            padding: 1rem 0;
+        }
+        .site-header .container { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+        .site-header .logo h1 { margin:0; font-size:1.15rem; color:var(--brand); letter-spacing:0.2px; }
+
+        .hero-about {
+            background: linear-gradient(90deg, rgba(31,143,107,0.06), rgba(31,143,107,0.02));
+            border-radius: var(--radius);
+            padding: 2.25rem;
+            margin: 1.25rem 0;
+            display:flex;
+            gap:1.25rem;
+            align-items:center;
+            box-shadow: var(--shadow);
+        }
+
+        .hero-about .hero-text { flex:1; }
+        .hero-about h2 { margin:0 0 .4rem 0; font-size:1.6rem; }
+        .hero-about p.lead { margin:0; color:var(--muted); line-height:1.5; }
+
+        .hero-about .hero-graphic {
+            width:120px; height:120px;
+            display:grid; place-items:center;
+            background: linear-gradient(180deg, #ffffff, #f0fff5);
+            border-radius:14px;
+            box-shadow: 0 8px 22px rgba(31,143,107,0.07);
+            flex-shrink:0;
+        }
+
+        .values-grid {
+            display:grid;
+            grid-template-columns: repeat(3,1fr);
+            gap:1rem;
+            margin-top:1rem;
+        }
+
+        .value-item {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding:1rem;
+            box-shadow: var(--shadow);
+            display:flex;
+            gap: .75rem;
+            align-items:flex-start;
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+        .value-item:hover { transform: translateY(-6px); box-shadow: 0 14px 40px rgba(31,31,31,0.08); }
+
+        .value-icon {
+            width:48px; height:48px; border-radius:10px;
+            display:grid; place-items:center;
+            background: linear-gradient(180deg, rgba(31,143,107,0.12), rgba(31,143,107,0.06));
+            flex-shrink:0;
+        }
+        .value-content h3 { margin:0; font-size:1.05rem; }
+        .value-content p { margin:.35rem 0 0 0; color:var(--muted); line-height:1.45; font-size:.95rem; }
+
+        .about-cta {
+            margin-top:1.25rem;
+            display:flex; gap:.75rem; align-items:center;
+        }
+        .btn-primary {
+            background:var(--brand); color:#fff; border:0; padding:.6rem .9rem; border-radius:8px; cursor:pointer;
+            box-shadow: 0 8px 20px rgba(31,143,107,0.12);
+        }
+        .btn-ghost { background:transparent; border:1px solid #e6f3ed; color:var(--brand); padding:.55rem .9rem; border-radius:8px; cursor:pointer; }
+
+        footer.site-footer {
+            margin-top:2rem; padding:1.25rem 0; color:var(--muted);
+            border-top:1px solid #eef3ef;
+        }
+
+        @media (max-width: 900px) {
+            .values-grid { grid-template-columns: repeat(2,1fr); }
+            .hero-about { padding:1rem; gap:.75rem; }
+        }
+        @media (max-width: 640px) {
+            .values-grid { grid-template-columns: 1fr; }
+            .hero-about { flex-direction:column; align-items:flex-start; }
+            .hero-about .hero-graphic { width:100%; height:120px; border-radius:10px; }
+        }
+    </style>
 </head>
 <body>
-    <header class="header">
+    <header class="site-header header">
         <div class="container">
             <div class="logo">
                 <h1>FairFind</h1>
             </div>
-            <nav class="nav">
-                <ul>
+            <nav class="nav" aria-label="Primary">
+                <ul style="display:flex;gap:1rem;list-style:none;margin:0;padding:0;">
                     <li><a href="index.html">Home</a></li>
                     <li><a href="products.html">Products</a></li>
                     <li><a href="companies.html">Companies</a></li>
-                    <li><a href="about.html">About</a></li>
+                    <li><a href="about.html" aria-current="page">About</a></li>
                 </ul>
             </nav>
         </div>
     </header>
 
-    <section class="about">
-        <div class="container">
-            <h2>About FairFind</h2>
-            <p>FairFind is a platform dedicated to helping conscious consumers find affordable, authentic, and ethically sourced alternatives to overpriced products. We believe that everyone deserves access to quality goods without breaking the bank or compromising their values.</p>
-            
-            <div class="values">
-                <div class="value-item">
-                    <h3>Affordability</h3>
-                    <p>Find products that fit your budget without sacrificing quality</p>
+    <main class="about">
+        <div class="container" style="max-width:1100px;margin:0 auto;padding:1rem;">
+            <section class="hero-about" aria-labelledby="about-heading">
+                <div class="hero-graphic" aria-hidden="true">
+                    <!-- simple illustrative SVG -->
+                    <svg width="68" height="68" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M12 2l3 6 6 .5-4.5 4 1 6L12 16l-5.5 3.5 1-6L3 8.5 9 8 12 2z" fill="#1f8f6b" opacity="0.98"/>
+                    </svg>
                 </div>
-                <div class="value-item">
-                    <h3>Authenticity</h3>
-                    <p>Discover genuine alternatives from trusted brands</p>
+
+                <div class="hero-text">
+                    <h2 id="about-heading">We make conscious shopping simple</h2>
+                    <p class="lead">FairFind helps you discover affordable, ethical, and high-quality alternatives to products you love. Our curated listings spotlight brands and goods that prioritize fair labor, sustainability, and transparency — without the premium price tag.</p>
+
+                    <div class="about-cta">
+                        <a class="btn-primary" href="products.html">Browse Products</a>
+                        <a class="btn-ghost" href="companies.html">Browse Companies</a>
+                    </div>
                 </div>
-                <div class="value-item">
-                    <h3>Ethics</h3>
-                    <p>Support companies with fair labor practices and sustainable methods</p>
+            </section>
+
+            <section aria-labelledby="values-heading" style="margin-top:1.25rem;">
+                <h3 id="values-heading" style="margin:0 0 .6rem 0;">Our values</h3>
+                <div class="values-grid" role="list">
+                    <article class="value-item" role="listitem">
+                        <div class="value-icon" aria-hidden="true">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M2 12h20" stroke="#1f8f6b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </div>
+                        <div class="value-content">
+                            <h3>Affordability</h3>
+                            <p>We surface high-quality options at fair prices so better choices are accessible to everyone.</p>
+                        </div>
+                    </article>
+
+                    <article class="value-item" role="listitem">
+                        <div class="value-icon" aria-hidden="true">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 4v6c0 5-7 8-7 8s-7-3-7-8V7l7-4z" stroke="#1f8f6b" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </div>
+                        <div class="value-content">
+                            <h3>Authenticity</h3>
+                            <p>We highlight trusted brands and clearly show what makes each product a genuine alternative.</p>
+                        </div>
+                    </article>
+
+                    <article class="value-item" role="listitem">
+                        <div class="value-icon" aria-hidden="true">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 21s6-4 6-10A6 6 0 0 0 6 11c0 6 6 10 6 10z" stroke="#1f8f6b" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </div>
+                        <div class="value-content">
+                            <h3>Ethics</h3>
+                            <p>We prioritize products from companies with fair labor practices and environmentally responsible methods.</p>
+                        </div>
+                    </article>
                 </div>
-            </div>
+            </section>
+
+            <section style="margin-top:1.25rem;">
+                <h3 style="margin:0 0 .5rem 0;">How it works</h3>
+                <ol style="color:var(--muted);margin:0;padding-left:1.25rem;">
+                    <li>We research and verify brands and products.</li>
+                    <li>We surface options that match your budget and values.</li>
+                    <li>We link directly to sellers so you can compare and buy.</li>
+                </ol>
+            </section>
+
+            <footer class="site-footer" role="contentinfo">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+                    <small>© <span id="year"></span> FairFind — helping you choose better.</small>
+                    <nav aria-label="Footer">
+                        <a href="privacy.html" style="color:var(--muted);margin-left:.75rem;">Privacy</a>
+                    </nav>
+                </div>
+            </footer>
         </div>
-    </section>
+    </main>
+
+    <script>
+        // small dynamic nicety
+        document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
 </body>
 </html>
