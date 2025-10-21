@@ -5,6 +5,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FairFind - Ethical & Affordable Products</title>
     <link rel="stylesheet" href="styles.css">
+    
+    <style>
+        /* overlay */
+        .filter-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity .28s ease;
+            z-index: 999;
+        }
+        .filter-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* panel */
+        .filter-panel {
+            position: fixed;
+            top: 0;
+            left: -340px; /* hidden off-screen */
+            width: 320px;
+            max-width: 100%;
+            height: 100%;
+            background: #fff;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.2);
+            transition: left .28s ease;
+            z-index: 1000;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        .filter-panel.open {
+            left: 0;
+        }
+
+        .filter-panel .close-btn {
+            background: none;
+            border: 0;
+            font-size: 1.6rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        /* small screens: full width */
+        @media (max-width: 420px) {
+            .filter-panel { width: 100%; left: -100%; }
+            .filter-panel.open { left: 0; }
+        }
+
+        /* small niceties for filter content */
+        .filter-section { margin: 0.75rem 0; }
+        .filter-section label { display:block; font-weight:600; margin-bottom:0.35rem; }
+        .filter-actions { display:flex; gap:.5rem; margin-top:1rem; }
+        .filter-actions button { flex:1; padding:.5rem; }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -24,13 +80,43 @@
         </div>
     </header>
 
+    <!-- Left-side filter panel + overlay (added) -->
+    <div id="filterOverlay" class="filter-overlay" tabindex="-1" aria-hidden="true"></div>
+
+    <aside id="filterPanel" class="filter-panel" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="filterHeading">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+            <h2 id="filterHeading" style="margin:0; font-size:1.25rem;">Filters</h2>
+            <button id="filterClose" class="close-btn" aria-label="Close filters">&times;</button>
+        </div>
+
+        <form id="filterForm" aria-describedby="filterHeading">
+            <div class="filter-section">
+                <label for="priceRange">Max price</label>
+                <input id="priceRange" name="maxPrice" type="number" min="0" placeholder="e.g. 50" style="width:100%; padding:.4rem;">
+            </div>
+
+            <div class="filter-section">
+                <label>Tags</label>
+                <label><input type="checkbox" name="tag" value="ethical"> Ethical</label>
+                <label><input type="checkbox" name="tag" value="affordable"> Affordable</label>
+                <label><input type="checkbox" name="tag" value="eco"> Eco-friendly</label>
+            </div>
+
+            <div class="filter-actions">
+                <button type="button" id="applyFilters" class="btn">Apply</button>
+                <button type="button" id="clearFilters" class="btn">Clear</button>
+            </div>
+        </form>
+    </aside>
+
     <!-- Hero Section -->
     <section class="hero">
         <div class="container">
             <h2>Discover Ethical and Affordable Products</h2>
             <p>Browse our curated list of products that align with your values and budget</p>
             <div class="search-box">
-                <button class="filter-button" aria-label="Open filters">Filter</button>
+                <!-- added id to toggle -->
+                <button id="filterButton" class="filter-button" aria-label="Open filters">Filter</button>
                 <input type="text" placeholder="Search for a product" class="search-input">
                 <button class="search-button">Search</button>
                 
@@ -100,5 +186,125 @@
         </div>
     </section>
 
+    <!-- ...existing code... -->
+
+    <!-- Script to toggle the filter panel -->
+    <script>
+        (function () {
+            const openBtn = document.getElementById('filterButton');
+            const closeBtn = document.getElementById('filterClose');
+            const panel = document.getElementById('filterPanel');
+            const overlay = document.getElementById('filterOverlay');
+            const applyBtn = document.getElementById('applyFilters');
+            const clearBtn = document.getElementById('clearFilters');
+            const firstFocusable = document.getElementById('priceRange');
+
+            function openPanel() {
+                panel.classList.add('open');
+                overlay.classList.add('open');
+                panel.setAttribute('aria-hidden', 'false');
+                overlay.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+                // focus first input for accessibility
+                if (firstFocusable) firstFocusable.focus();
+                // trap focus minimally by focusing close button when tabbing past last control could be added later
+            }
+
+            function closePanel() {
+                panel.classList.remove('open');
+                overlay.classList.remove('open');
+                panel.setAttribute('aria-hidden', 'true');
+                overlay.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+                openBtn.focus();
+            }
+
+            openBtn.addEventListener('click', openPanel);
+            closeBtn.addEventListener('click', closePanel);
+            overlay.addEventListener('click', closePanel);
+
+            // close with Esc
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && panel.classList.contains('open')) {
+                    closePanel();
+                }
+            });
+
+            // simple apply/clear handlers (no backend logic here)
+            applyBtn.addEventListener('click', function () {
+                // gather filters and close (hook into actual filtering logic as needed)
+                const form = document.getElementById('filterForm');
+                const data = new FormData(form);
+                // example: console.log([...data.entries()]);
+                closePanel();
+            });
+
+            clearBtn.addEventListener('click', function () {
+                document.getElementById('filterForm').reset();
+            });
+
+            // --- Search functionality: run on Enter or Search button click ---
+            const searchInput = document.querySelector('.search-input');
+            const searchBtn = document.querySelector('.search-button');
+            const productGrid = document.querySelector('.product-grid');
+
+            function normalize(str) {
+                return (str || '').toString().trim().toLowerCase();
+            }
+
+            function performSearch() {
+                const query = normalize(searchInput && searchInput.value);
+                const cards = productGrid ? productGrid.querySelectorAll('.product-card') : [];
+                let visibleCount = 0;
+
+                cards.forEach(card => {
+                    const title = normalize(card.querySelector('h3')?.textContent);
+                    const price = normalize(card.querySelector('.price')?.textContent);
+                    const features = normalize(Array.from(card.querySelectorAll('.product-features li')).map(li => li.textContent).join(' '));
+                    const badges = normalize(Array.from(card.querySelectorAll('.badges .badge')).map(b => b.textContent).join(' '));
+                    const hay = `${title} ${price} ${features} ${badges}`;
+
+                    if (!query || hay.indexOf(query) !== -1) {
+                        card.style.display = '';
+                        visibleCount++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+
+                // show/no-results message
+                let noEl = productGrid.querySelector('.no-results');
+                if (visibleCount === 0) {
+                    if (!noEl) {
+                        noEl = document.createElement('div');
+                        noEl.className = 'no-results';
+                        noEl.textContent = 'No products found.';
+                        noEl.style.padding = '1rem';
+                        noEl.style.gridColumn = '1/-1';
+                        noEl.style.textAlign = 'center';
+                        productGrid.appendChild(noEl);
+                    }
+                } else {
+                    if (noEl) noEl.remove();
+                }
+            }
+
+            if (searchBtn) {
+                searchBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    performSearch();
+                });
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        performSearch();
+                    }
+                });
+            }
+        })();
+    </script>
 </body>
 </html>
