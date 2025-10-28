@@ -196,7 +196,7 @@ section {
     .container { max-width: 1100px; }
     .product-listings .container { transition: margin-left 0.25s ease-in-out; }
     .product-listings .container { margin-left: 300px; }
-    .hero .container { margin-left: 300px; }
+    .hero .container { margin-left: 175px; }
 }
 
 @media (max-width: 699px) {
