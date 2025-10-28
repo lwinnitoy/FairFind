@@ -1,83 +1,325 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Product Finder</title>
-<style>
-body { font-family: Arial, sans-serif; background:#f4f4f4; color:#333; margin:0; padding:0; }
-.container { max-width:1200px; margin:0 auto; padding:20px; }
-h1 { text-align:center; margin-bottom:20px; }
-.search-box { display:flex; justify-content:center; gap:10px; margin-bottom:20px; }
-.search-box input { padding:10px; width:300px; border:2px solid #bbb; border-radius:4px; }
-.search-box button { padding:10px 15px; border:none; background:#007bff; color:#fff; border-radius:4px; cursor:pointer; }
-.search-box button:hover { background:#0056b3; }
-.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:20px; }
-.card { background:#fff; border-radius:6px; padding:15px; border:2px solid #ccc; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
-.card img { width:100%; height:180px; object-fit:cover; margin-bottom:10px; border-radius:4px; }
-.card h3 { margin:0 0 5px 0; font-size:1.2rem; }
-.card p { margin:0 0 5px 0; color:#555; }
-.card .price { color:#007bff; font-weight:700; font-size:1.1rem; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ethical Product Finder</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f6f6f6;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+
+    header {
+      background-color: #2e7d32;
+      color: white;
+      padding: 1.2rem;
+      text-align: center;
+    }
+
+    nav {
+      background: #388e3c;
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      padding: 0.8rem;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+      transition: color 0.2s;
+    }
+
+    nav a:hover {
+      color: #c8e6c9;
+    }
+
+    .search-container {
+      display: flex;
+      justify-content: center;
+      margin: 25px;
+      gap: 10px;
+    }
+
+    #searchInput {
+      width: 320px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    #searchBtn {
+      background-color: #43a047;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    #searchBtn:hover {
+      background-color: #388e3c;
+    }
+
+    #productList {
+      display: none;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      padding: 20px;
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      padding: 15px;
+      text-align: center;
+      transition: transform 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+    }
+
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .price {
+      color: #2e7d32;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+
+    .tag {
+      display: inline-block;
+      background-color: #e0f2f1;
+      color: #00796b;
+      font-size: 0.8rem;
+      padding: 3px 8px;
+      margin: 3px;
+      border-radius: 6px;
+    }
+
+    /* --- Three Step Walkthrough --- */
+    #howToUse {
+      max-width: 1000px;
+      margin: 50px auto;
+      text-align: center;
+    }
+
+    #howToUse h2 {
+      color: #2e7d32;
+      margin-bottom: 30px;
+    }
+
+    .steps {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .step {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      flex: 1 1 250px;
+      max-width: 300px;
+      padding: 25px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .step:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .step-number {
+      background: #2e7d32;
+      color: white;
+      font-size: 1.4rem;
+      font-weight: bold;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 15px auto;
+    }
+
+    .step h3 {
+      color: #2e7d32;
+      margin-bottom: 10px;
+    }
+
+    .step p {
+      color: #555;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+  </style>
 </head>
 <body>
+  <header>
+    <h1>Ethical Product Finder</h1>
+    <p>Discover sustainable and affordable fashion</p>
+  </header>
 
-<div class="container">
-  <h1>Product Finder</h1>
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="Search by description...">
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="about.html">About</a>
+    <a href="companies.html">Companies</a>
+  </nav>
+
+  <div class="search-container">
+    <input type="text" id="searchInput" placeholder="Search for shirts, shoes, jackets..." />
     <button id="searchBtn">Search</button>
   </div>
-  <div class="grid" id="productList"></div>
-</div>
 
-<script>
-const PIXABAY_KEY = ""; // <-- Replace with your Pixabay API key
+  <section id="howToUse">
+    <h2>How to Use Ethical Product Finder</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <h3>Search for Products</h3>
+        <p>Enter URLS or keywords like “shirt,” “jacket,” or “pants” in the search bar to find ethical clothing options.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <h3>Explore Details</h3>
+        <p>Read about each product’s sustainability features, materials, and origin before deciding.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <h3>Shop Consciously</h3>
+        <p>Use your insights to support local, fair-trade, and eco-friendly brands that match your values.</p>
+      </div>
+    </div>
+  </section>
 
-async function searchProducts() {
-  const query = document.getElementById("searchInput").value.trim() || "shirt";
-  
-  // Fetch images from Pixabay
-  const res = await fetch(`https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=8`);
-  const data = await res.json();
-  
-  const categories = ["Shirt","Shoes","Jacket","Hat"];
-  const adjectives = ["Premium","Budget","Stylish","Eco","Classic","Modern"];
-  
-  const productList = document.getElementById("productList");
-  productList.innerHTML = "";
+  <div id="productList"></div>
 
-  if(data.hits.length === 0){
-    productList.innerHTML = "<p style='grid-column:1/-1;text-align:center;'>No products found.</p>";
-    return;
-  }
+  <script>
+    const products = [
+      {
+        name: "Eco Cotton Shirt",
+        category: "Shirt",
+        description: "Made from 100% organic cotton and ethically produced in Canada.",
+        price: 39.99,
+        image: "images/shirt1.jpg",
+        tags: ["Eco-Friendly", "Local", "Organic"]
+      },
+      {
+        name: "Organic Linen Shirt",
+        category: "Shirt",
+        description: "Lightweight linen shirt designed for breathable summer comfort.",
+        price: 44.99,
+        image: "images/shirt2.jpg",
+        tags: ["Sustainable", "Organic"]
+      },
+      {
+        name: "Recycled Cotton Tee",
+        category: "Shirt",
+        description: "Soft tee crafted from recycled cotton fibers to reduce waste.",
+        price: 29.99,
+        image: "images/shirt3.jpg",
+        tags: ["Recycled", "Eco-Friendly"]
+      },
+      {
+        name: "Hemp Blend Casual Shirt",
+        category: "Shirt",
+        description: "Durable hemp-cotton blend shirt that’s naturally antibacterial.",
+        price: 49.99,
+        image: "images/shirt4.jpg",
+        tags: ["Organic", "Sustainable"]
+      },
+      {
+        name: "Plain Shirt",
+        category: "Shirt",
+        description: "Timeless white button-up made from GOTS-certified organic cotton.",
+        price: 89.50,
+        image: "images/shirt5.jpg",
+        tags: ["Recycled", "Sustainable"]
+      },
+      {
+        name: "Wool Shirt",
+        category: "Shirt",
+        description: "Ethically sourced wool from small local farms, soft and warm.",
+        price: 74.99,
+        image: "images/shirt6.jpg",
+        tags: ["Fair Trade", "Local"]
+      },
+      {
+        name: "White Longsleeve Shirt",
+        category: "Shirt",
+        description: "Breathable white linen shirt with a relaxed fit and natural finish.",
+        price: 59.99,
+        image: "images/shirt7.jpg",
+        tags: ["Vegan", "Eco-Friendly"]
+      },
+      {
+        name: "Old Classic Shirt",
+        category: "Shirt",
+        description: "Soft white everyday shirt crafted from 70% recycled cotton fibers.",
+        price: 69.99,
+        image: "images/shirt8.jpg",
+        tags: ["Sustainable", "Recycled", "Vegan"]
+      }
+    ];
 
-  data.hits.forEach((img, i) => {
-    const category = categories[i % categories.length];
-    const name = `${adjectives[i % adjectives.length]} ${category} #${i+1}`;
-    const price = (Math.random()*120 + 10).toFixed(2);
-    const desc = `A ${adjectives[i % adjectives.length].toLowerCase()} ${category.toLowerCase()} perfect for ${query}.`;
-    
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <img src="${img.webformatURL}" alt="${name}">
-      <h3>${name}</h3>
-      <p>${desc}</p>
-      <p class="price">$${price}</p>
-    `;
-    productList.appendChild(card);
-  });
-}
+    function displayProducts(list) {
+      const productList = document.getElementById("productList");
+      productList.innerHTML = "";
 
-document.getElementById("searchBtn").addEventListener("click", searchProducts);
-document.getElementById("searchInput").addEventListener("keydown", e => {
-  if(e.key === "Enter") searchProducts();
-});
+      if (list.length === 0) {
+        productList.innerHTML = "<p style='grid-column:1/-1;text-align:center;'>No products found.</p>";
+      } else {
+        list.forEach(p => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <img src="${p.image}" alt="${p.name}">
+            <h3>${p.name}</h3>
+            <p>${p.description}</p>
+            <p class="price">$${p.price.toFixed(2)}</p>
+            <div>${p.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}</div>
+          `;
+          productList.appendChild(card);
+        });
+      }
 
-// Initial load
-searchProducts();
-</script>
+      document.getElementById("howToUse").style.display = "none";
+      productList.style.display = "grid";
+    }
 
+    function searchProducts() {
+      const query = document.getElementById("searchInput").value.trim().toLowerCase();
+      const filtered = products.filter(p =>
+        p.name.toLowerCase().includes(query) ||
+        p.description.toLowerCase().includes(query) ||
+        p.category.toLowerCase().includes(query)
+      );
+      displayProducts(filtered);
+    }
+
+    document.getElementById("searchBtn").addEventListener("click", searchProducts);
+    document.getElementById("searchInput").addEventListener("keydown", e => {
+      if (e.key === "Enter") searchProducts();
+    });
+  </script>
 </body>
 </html>
