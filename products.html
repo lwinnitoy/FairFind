@@ -388,30 +388,52 @@
                 const hay = [p.name, p.description, p.category, ...(p.tags||[])].map(normalize).join(' ');
                 return hay.includes(normalize(q));
             }
-                    function getActiveFilters(){
-                        const maxStr = document.getElementById('priceRange')?.value || '';
-                        const maxPrice = maxStr ? parseFloat(maxStr) : null;
-                        const selectedTags = Array.from(document.querySelectorAll('input[name="tag"]:checked')).map(i => i.value.toLowerCase());
-                        return { maxPrice, selectedTags };
-                    }
 
-                    function matchesFilters(p, filters){
-                        const { maxPrice, selectedTags } = filters;
-                        if (typeof maxPrice === 'number' && !isNaN(maxPrice)) {
-                            if (p.price > maxPrice) return false;
-                        }
-                        if (selectedTags.length > 0) {
-                            const productTags = (p.tags || []).map(t => t.toLowerCase());
-                            // OR logic: match if any selected tag is in product tags
-                            const any = selectedTags.some(t => productTags.includes(t));
-                            if (!any) return false;
-                        }
-                        return true;
-                    }
+            function getActiveFilters(){
+                const maxStr = document.getElementById('priceRange')?.value || '';
+                const maxPrice = maxStr ? parseFloat(maxStr) : null;
+                const selectedTags = Array.from(document.querySelectorAll('input[name="tag"]:checked')).map(i => i.value.toLowerCase());
+                return { maxPrice, selectedTags };
+            }
 
-                    function searchAndRender(q){
-                        const filters = getActiveFilters();
-                        const list = products.filter(p => matchesQuery(p, q) && matchesFilters(p, filters));
+            function matchesFilters(p, filters){
+                const { maxPrice, selectedTags } = filters;
+                if (typeof maxPrice === 'number' && !isNaN(maxPrice)) {
+                    if (p.price > maxPrice) return false;
+                }
+                // require product to include ALL selected tags (AND semantics)
+                if (selectedTags.length > 0) {
+                    const productTags = (p.tags || []).map(t => t.toLowerCase());
+                    const allMatch = selectedTags.every(t => productTags.includes(t));
+                    if (!allMatch) return false;
+                }
+                return true;
+            }
+
+            function sampleRandom(arr, n){
+                const out = [];
+                const src = arr.slice();
+                while(out.length < n && src.length){
+                    const idx = Math.floor(Math.random() * src.length);
+                    out.push(src.splice(idx,1)[0]);
+                }
+                return out;
+            }
+
+            function searchAndRender(q){
+                const filters = getActiveFilters();
+                const hasFilters = (typeof filters.maxPrice === 'number' && !isNaN(filters.maxPrice)) || filters.selectedTags.length > 0;
+                
+                // If there's no query and no filters, show three random featured products
+                if(!q && !hasFilters){
+                    const featured = sampleRandom(products, 3);
+                    render(featured);
+                    if(heading) heading.textContent = 'Featured Products';
+                    return;
+                }
+
+                // otherwise apply query + filters
+                const list = products.filter(p => matchesQuery(p, q) && matchesFilters(p, filters));
                 render(list);
                 if(heading){ heading.textContent = q ? `Results for: ${q}` : 'Featured Products'; }
             }
@@ -420,11 +442,11 @@
             if(button){ button.addEventListener('click', (e)=>{ e.preventDefault(); searchAndRender(input?.value || ''); }); }
             if(input){ input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); searchAndRender(input.value); } }); }
 
-                    // Expose filter panel hooks
-                    window.applyFiltersFromPanel = function(){ searchAndRender(input?.value || ''); };
-                    window.clearFiltersFromPanel = function(){ document.getElementById('filterForm')?.reset(); searchAndRender(input?.value || ''); };
+            // Expose filter panel hooks
+            window.applyFiltersFromPanel = function(){ searchAndRender(input?.value || ''); };
+            window.clearFiltersFromPanel = function(){ document.getElementById('filterForm')?.reset(); searchAndRender(input?.value || ''); };
 
-                    // Load from ?q=
+            // Load from ?q=
             const params = new URLSearchParams(location.search);
             const q = (params.get('q')||'').trim();
             if(q && input) input.value = q;

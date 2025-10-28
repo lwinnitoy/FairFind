@@ -78,14 +78,47 @@
 
         .price { font-weight:600; color:#0f1720; }
 
+        /* How-to steps: responsive 3/2/1 column layout and card styling */
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+            align-items: start;
+        }
+        .step {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            display: flex;
+            gap: .75rem;
+            align-items: flex-start;
+        }
+        .step-number {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(180deg, rgba(31,143,107,0.12), rgba(31,143,107,0.06));
+            color: var(--brand);
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .step h3 { margin: 0; font-size: 1.05rem; }
+        .step p { margin: .35rem 0 0; color: var(--muted); line-height: 1.45; }
+
         footer.site-footer { margin-top:2rem; padding:1.25rem 0; color:var(--muted); border-top:1px solid #eef3ef; }
 
         @media (max-width: 900px) {
             .comparison-grid { grid-template-columns: repeat(2, 1fr); }
+            .steps { grid-template-columns: repeat(2, 1fr); }
         }
         @media (max-width: 640px) {
             .comparison-grid { grid-template-columns: 1fr; }
-            .hero .container { align-items:flex-start; text-align:left; }
+            .steps { grid-template-columns: 1fr; }
+            .hero .container { align-items: flex-start; text-align: left; }
             .search-box { justify-content:flex-start; }
         }
     </style>
@@ -124,22 +157,30 @@
 
    <!-- How It Works Section -->
    <section id="howToUse">
-    <h2>How to Use Ethical Product Finder</h2>
-    <div class="steps">
-      <div class="step">
-        <div class="step-number">1</div>
-        <h3>Search for Products</h3>
-        <p>Enter URLS or keywords like “shirt,” “jacket,” or “pants” in the search bar to find ethical clothing options.</p>
-      </div>
-      <div class="step">
-        <div class="step-number">2</div>
-        <h3>Explore Details</h3>
-        <p>Read about each product’s sustainability features, materials, and origin before deciding.</p>
-      </div>
-      <div class="step">
-        <div class="step-number">3</div>
-        <h3>Shop Consciously</h3>
-        <p>Use your insights to support local, fair-trade, and eco-friendly brands that match your values.</p>
+    <div class="container">
+      <h2>How to Use Ethical Product Finder</h2>
+      <div class="steps" aria-labelledby="howToUse">
+        <div class="step">
+          <div class="step-number" aria-hidden="true">1</div>
+          <div>
+            <h3>Search for Products</h3>
+            <p>Enter URLs or keywords like “shirt,” “jacket,” or “pants” in the search bar to find ethical clothing options.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number" aria-hidden="true">2</div>
+          <div>
+            <h3>Explore Details</h3>
+            <p>Read about each product’s sustainability features, materials, and origin before deciding.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number" aria-hidden="true">3</div>
+          <div>
+            <h3>Shop Consciously</h3>
+            <p>Use your insights to support local, fair-trade, and eco-friendly brands that match your values.</p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
