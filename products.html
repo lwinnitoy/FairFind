@@ -76,7 +76,8 @@
             flex-direction:column;
             gap:.5rem;
         }
-        .product-image-placeholder { background:#f3faf6; border-radius:8px; padding:1.5rem; display:grid; place-items:center; color:var(--muted); }
+    .product-image-placeholder { background:#f3faf6; border-radius:8px; height: 180px; display:flex; align-items:center; justify-content:center; color:var(--muted); overflow:hidden; }
+    .product-image-placeholder img { width:100%; height:100%; object-fit: cover; display:block; }
 
         .price { font-weight:600; color:#0f1720; }
 
@@ -159,7 +160,7 @@
     <aside id="filterPanel" class="filter-panel" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="filterHeading">
         <div style="display:flex; align-items:center; justify-content:space-between;">
             <h2 id="filterHeading" style="margin:0; font-size:1.25rem;">Filters</h2>
-            <button id="filterClose" class="close-btn" aria-label="Close filters">&times;</button>
+            <button id="filterClose" class="close-btn" aria-label="Hide filters" title="Hide filters">&larr;</button>
         </div>
 
         <form id="filterForm" aria-describedby="filterHeading">
@@ -170,9 +171,13 @@
 
             <div class="filter-section">
                 <label>Tags</label>
-                <label><input type="checkbox" name="tag" value="ethical"> Ethical</label>
-                <label><input type="checkbox" name="tag" value="affordable"> Affordable</label>
-                <label><input type="checkbox" name="tag" value="eco"> Eco-friendly</label>
+                <label><input type="checkbox" name="tag" value="Eco-Friendly"> Eco-Friendly</label>
+                <label><input type="checkbox" name="tag" value="Organic"> Organic</label>
+                <label><input type="checkbox" name="tag" value="Sustainable"> Sustainable</label>
+                <label><input type="checkbox" name="tag" value="Recycled"> Recycled</label>
+                <label><input type="checkbox" name="tag" value="Local"> Local</label>
+                <label><input type="checkbox" name="tag" value="Vegan"> Vegan</label>
+                <label><input type="checkbox" name="tag" value="Fair Trade"> Fair Trade</label>
             </div>
 
             <div class="filter-actions">
@@ -317,105 +322,114 @@
                 }
             });
 
-            // simple apply/clear handlers (no backend logic here)
+            // hook into dataset search below
             applyBtn.addEventListener('click', function () {
-                const form = document.getElementById('filterForm');
-                const data = new FormData(form);
-                closePanel();
+                if (window.applyFiltersFromPanel) window.applyFiltersFromPanel();
+                // keep panel open after applying filters
             });
 
             clearBtn.addEventListener('click', function () {
-                document.getElementById('filterForm').reset();
+                if (window.clearFiltersFromPanel) window.clearFiltersFromPanel();
             });
 
-            // --- Search functionality: run on Enter or Search button click ---
-            const searchInput = document.querySelector('.search-input');
-            const searchBtn = document.querySelector('.search-button');
-            const productGrid = document.querySelector('.product-grid');
-
-            function normalize(str) {
-                return (str || '').toString().trim().toLowerCase();
-            }
-
-            function performSearch() {
-                const query = normalize(searchInput && searchInput.value);
-                const cards = productGrid ? productGrid.querySelectorAll('.product-card') : [];
-                let visibleCount = 0;
-
-                cards.forEach(card => {
-                    const title = normalize(card.querySelector('h3')?.textContent);
-                    const price = normalize(card.querySelector('.price')?.textContent);
-                    const features = normalize(Array.from(card.querySelectorAll('.product-features li')).map(li => li.textContent).join(' '));
-                    const badges = normalize(Array.from(card.querySelectorAll('.badges .badge')).map(b => b.textContent).join(' '));
-                    const hay = `${title} ${price} ${features} ${badges}`;
-
-                    if (!query || hay.indexOf(query) !== -1) {
-                        card.style.display = '';
-                        visibleCount++;
-                    } else {
-                        card.style.display = 'none';
-                    }
-                });
-
-                // show/no-results message
-                let noEl = productGrid.querySelector('.no-results');
-                if (visibleCount === 0) {
-                    if (!noEl) {
-                        noEl = document.createElement('div');
-                        noEl.className = 'no-results';
-                        noEl.textContent = 'No products found.';
-                        noEl.style.padding = '1rem';
-                        noEl.style.gridColumn = '1/-1';
-                        noEl.style.textAlign = 'center';
-                        productGrid.appendChild(noEl);
-                    }
-                } else {
-                    if (noEl) noEl.remove();
-                }
-            }
-
-            if (searchBtn) {
-                searchBtn.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    performSearch();
-                });
-            }
-
-            if (searchInput) {
-                searchInput.addEventListener('keydown', function (e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        performSearch();
-                    }
-                });
-            }
+                        // Panel JS ends here; search is implemented below with a dataset
         })();
     </script>
-    <!--ELEGANT GAVIN CODE totally below-->
-<script>
-document.querySelector('.search-button').addEventListener('click', function () {
-  const q = document.querySelector('.search-input').value.trim();
-  if (!q) return; // ignore empty
-  location.href = 'products.html?q=' + encodeURIComponent(q);
-  
-});
-document.querySelector('.search-input').addEventListener('keydown', function (e) {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    document.querySelector('.search-button').click();
-  }
-});
-</script>
-<script>
-const params = new URLSearchParams(location.search);
-const q = (params.get('q') || '').trim();
-if (q) {
-  document.getElementById('results-heading').textContent = 'Results for: ' + q;
-  // TODO: run your search function here (filter your product list, call an API, etc.)
-  // Example placeholder:
-  
-  document.getElementById('results-container').textContent = 'Searching for "' + q + '"...';
-}
-</script>
+        <!-- Products dataset search/render -->
+        <script>
+            (function(){
+            const products = [
+                { name: "Eco Cotton Shirt", category: "Shirt", description: "Made from 100% organic cotton and ethically produced in Canada.", price: 39.99, image: "images/shirt1.jpg", tags: ["Eco-Friendly", "Local", "Organic"] },
+                { name: "Organic Linen Shirt", category: "Shirt", description: "Lightweight linen shirt designed for breathable summer comfort.", price: 44.99, image: "images/shirt2.jpg", tags: ["Sustainable", "Organic"] },
+                { name: "Recycled Cotton Tee", category: "Shirt", description: "Soft tee crafted from recycled cotton fibers to reduce waste.", price: 29.99, image: "images/shirt3.jpg", tags: ["Recycled", "Eco-Friendly"] },
+                { name: "Hemp Blend Casual Shirt", category: "Shirt", description: "Durable hemp-cotton blend shirt that’s naturally antibacterial.", price: 49.99, image: "images/shirt4.jpg", tags: ["Organic", "Sustainable"] },
+                { name: "Plain Shirt", category: "Shirt", description: "Timeless white button-up made from GOTS-certified organic cotton.", price: 89.50, image: "images/shirt5.jpg", tags: ["Recycled", "Sustainable"] },
+                { name: "Wool Shirt", category: "Shirt", description: "Ethically sourced wool from small local farms, soft and warm.", price: 74.99, image: "images/shirt6.jpg", tags: ["Fair Trade", "Local"] },
+                { name: "White Longsleeve Shirt", category: "Shirt", description: "Breathable white linen shirt with a relaxed fit and natural finish.", price: 59.99, image: "images/shirt7.jpg", tags: ["Vegan", "Eco-Friendly"] },
+                { name: "Old Classic Shirt", category: "Shirt", description: "Soft white everyday shirt crafted from 70% recycled cotton fibers.", price: 69.99, image: "images/shirt8.jpg", tags: ["Sustainable", "Recycled", "Vegan"] }
+            ];
+
+            const productGrid = document.querySelector('.product-grid');
+            const heading = document.getElementById('results-heading');
+            const input = document.querySelector('.search-input');
+            const button = document.querySelector('.search-button');
+
+            function render(list){
+                if(!productGrid) return;
+                productGrid.innerHTML = '';
+                if(!list || list.length === 0){
+                    const empty = document.createElement('div');
+                    empty.style.gridColumn = '1/-1';
+                    empty.style.textAlign = 'center';
+                    empty.style.padding = '1rem';
+                    empty.textContent = 'No products found.';
+                    productGrid.appendChild(empty);
+                    return;
+                }
+                list.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = 'product-card';
+                    card.innerHTML = `
+                        <div class="product-image-placeholder">
+                            <img src="${p.image}" alt="${p.name}" style="max-width:100%;height:auto;display:block;" onerror="this.parentNode.textContent='Product Image'">
+                        </div>
+                        <h3>${p.name}</h3>
+                        <p class="price">$${p.price.toFixed(2)}</p>
+                        <p class="product-description">${p.description}</p>
+                        <div class="badges">${(p.tags||[]).map(t=>`<span class="badge">${t}</span>`).join(' ')}</div>
+                    `;
+                    productGrid.appendChild(card);
+                });
+            }
+
+            function normalize(s){ return (s||'').toString().trim().toLowerCase(); }
+            function matchesQuery(p, q){
+                if(!q) return true;
+                const hay = [p.name, p.description, p.category, ...(p.tags||[])].map(normalize).join(' ');
+                return hay.includes(normalize(q));
+            }
+                    function getActiveFilters(){
+                        const maxStr = document.getElementById('priceRange')?.value || '';
+                        const maxPrice = maxStr ? parseFloat(maxStr) : null;
+                        const selectedTags = Array.from(document.querySelectorAll('input[name="tag"]:checked')).map(i => i.value.toLowerCase());
+                        return { maxPrice, selectedTags };
+                    }
+
+                    function matchesFilters(p, filters){
+                        const { maxPrice, selectedTags } = filters;
+                        if (typeof maxPrice === 'number' && !isNaN(maxPrice)) {
+                            if (p.price > maxPrice) return false;
+                        }
+                        if (selectedTags.length > 0) {
+                            const productTags = (p.tags || []).map(t => t.toLowerCase());
+                            // OR logic: match if any selected tag is in product tags
+                            const any = selectedTags.some(t => productTags.includes(t));
+                            if (!any) return false;
+                        }
+                        return true;
+                    }
+
+                    function searchAndRender(q){
+                        const filters = getActiveFilters();
+                        const list = products.filter(p => matchesQuery(p, q) && matchesFilters(p, filters));
+                render(list);
+                if(heading){ heading.textContent = q ? `Results for: ${q}` : 'Featured Products'; }
+            }
+
+            // Wire UI
+            if(button){ button.addEventListener('click', (e)=>{ e.preventDefault(); searchAndRender(input?.value || ''); }); }
+            if(input){ input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); searchAndRender(input.value); } }); }
+
+                    // Expose filter panel hooks
+                    window.applyFiltersFromPanel = function(){ searchAndRender(input?.value || ''); };
+                    window.clearFiltersFromPanel = function(){ document.getElementById('filterForm')?.reset(); searchAndRender(input?.value || ''); };
+
+                    // Load from ?q=
+            const params = new URLSearchParams(location.search);
+            const q = (params.get('q')||'').trim();
+            if(q && input) input.value = q;
+            searchAndRender(q);
+        })();
+        </script>
 </body>
 </html>

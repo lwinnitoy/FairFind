@@ -123,28 +123,46 @@
     </section>
 
    <!-- How It Works Section -->
-    <section id="how-it-works" class="how-it-works">
-        <div class="container">
-            <h2>How It Works</h2>
-            <div class="steps">
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <h3>Search</h3>
-                    <p>Enter the product or brand you're interested in</p>
-                </div>
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <h3>Compare</h3>
-                    <p>View affordable and ethical alternatives side-by-side</p>
-                </div>
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <h3>Choose</h3>
-                    <p>Select the best option that fits your values and budget</p>
-                </div>
-            </div>
-        </div>
-    </section>
+   <section id="howToUse">
+    <h2>How to Use Ethical Product Finder</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <h3>Search for Products</h3>
+        <p>Enter URLS or keywords like “shirt,” “jacket,” or “pants” in the search bar to find ethical clothing options.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <h3>Explore Details</h3>
+        <p>Read about each product’s sustainability features, materials, and origin before deciding.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <h3>Shop Consciously</h3>
+        <p>Use your insights to support local, fair-trade, and eco-friendly brands that match your values.</p>
+      </div>
+    </div>
+  </section>
+
+  <div id="productList"></div>
+  <script>
+    // Redirect the search on index to products.html?q=...
+    const searchBtn = document.querySelector('.search-button');
+    const searchInput = document.querySelector('.search-input');
+    if (searchBtn && searchInput) {
+      searchBtn.addEventListener('click', function () {
+        const q = searchInput.value.trim();
+        if (!q) return;
+        location.href = 'products.html?q=' + encodeURIComponent(q);
+      });
+      searchInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          searchBtn.click();
+        }
+      });
+    }
+  </script>
 
     <!-- Product Comparison Section -->
     <section id="categories" class="product-comparison">
