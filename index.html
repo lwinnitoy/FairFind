@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FairFind - Find Affordable & Ethical Alternatives</title>
-    <link rel="stylesheet" href="styles.css">
-
+        <link rel="stylesheet" href="styles.css">
     <style>
         :root{
             --brand:#1f8f6b;
@@ -109,37 +108,43 @@
         </div>
     </header>
 
-  <nav>
-    <a href="index.html">Home</a>
-    <a href="about.html">About</a>
-    <a href="companies.html">Companies</a>
-  </nav>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h2>Find Fair Alternatives to Overpriced Products</h2>
+            <p>Discover affordable, authentic, and ethically sourced alternatives to expensive brands</p>
+            
+            <!-- Search Box -->
+            <div class="search-box">
+                <input type="text" placeholder="Search for a product or brand..." class="search-input">
+                <button class="search-button">Search</button>
+            </div>
+        </div>
+    </section>
 
-  <div class="search-container">
-    <input type="text" id="searchInput" placeholder="Search for shirts, shoes, jackets..." />
-    <button id="searchBtn">Search</button>
-  </div>
-
-  <section id="howToUse">
-    <h2>How to Use Ethical Product Finder</h2>
-    <div class="steps">
-      <div class="step">
-        <div class="step-number">1</div>
-        <h3>Search for Products</h3>
-        <p>Enter URLS or keywords like “shirt,” “jacket,” or “pants” in the search bar to find ethical clothing options.</p>
-      </div>
-      <div class="step">
-        <div class="step-number">2</div>
-        <h3>Explore Details</h3>
-        <p>Read about each product’s sustainability features, materials, and origin before deciding.</p>
-      </div>
-      <div class="step">
-        <div class="step-number">3</div>
-        <h3>Shop Consciously</h3>
-        <p>Use your insights to support local, fair-trade, and eco-friendly brands that match your values.</p>
-      </div>
-    </div>
-  </section>
+   <!-- How It Works Section -->
+    <section id="how-it-works" class="how-it-works">
+        <div class="container">
+            <h2>How It Works</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Search</h3>
+                    <p>Enter the product or brand you're interested in</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Compare</h3>
+                    <p>View affordable and ethical alternatives side-by-side</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Choose</h3>
+                    <p>Select the best option that fits your values and budget</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- Product Comparison Section -->
     <section id="categories" class="product-comparison">
@@ -196,19 +201,25 @@
         </div>
     </section>
 
-    <script>
-document.querySelector('.search-button').addEventListener('click', function () {
-  const q = document.querySelector('.search-input').value.trim();
-  if (!q) return; // ignore empty
-  location.href = 'products.html?q=' + encodeURIComponent(q);
-});
-document.querySelector('.search-input').addEventListener('keydown', function (e) {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    document.querySelector('.search-button').click();
-  }
-});
-</script>
+        <script>
+            const btn = document.getElementById('searchBtn');
+            const input = document.getElementById('searchInput');
+            if (btn && input) {
+                btn.addEventListener('click', function () {
+                    const q = input.value.trim();
+                    if (!q) return; // ignore empty
+                    location.href = 'products.html?q=' + encodeURIComponent(q);
+                });
+                input.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        btn.click();
+                    }
+                });
+            }
+        </script>
+
+    <!-- Footer -->
     <footer class="site-footer" role="contentinfo">
         <div class="container" style="max-width:1100px;margin:0 auto;padding:1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
             <small>© <span id="year"></span> FairFind — helping you choose better.</small>
