@@ -59,6 +59,13 @@
         .search-box .search-input { padding:.5rem .6rem; border-radius:8px; border:1px solid #e6f3ef; min-width:240px; box-sizing:border-box; }
         .search-box .search-button, .search-box .filter-button { padding:.5rem .75rem; border-radius:8px; border:0; background:var(--brand); color:#fff; cursor:pointer; }
         .search-box .filter-button { background:transparent; color:var(--brand); border:1px solid rgba(31,143,107,0.12); }
+        .search-box { position:relative; }
+        .recent-dropdown, .autocomplete-list {
+            position:absolute; top:100%; right:0; background:#fff; box-shadow:0 6px 18px rgba(0,0,0,0.08); border-radius:8px; padding:.5rem; margin-top:.5rem; width:260px; z-index:1200; display:none;
+        }
+        .recent-dropdown.open, .autocomplete-list.open { display:block; }
+        .autocomplete-item, .recent-item { padding:.35rem .5rem; cursor:pointer; border-radius:6px; }
+        .autocomplete-item:hover, .recent-item:hover { background: #f3faf6; }
 
         /* Product grid */
         .product-listings .product-grid, .product-grid {
@@ -94,6 +101,10 @@
             cursor:pointer;
         }
     /* non-disabled styling for demo so all CTAs look the same */
+        .filter-section .sort-select { width:100%; padding:.4rem; border-radius:8px; border:1px solid #eef6f1; }
+        .filter-section .price-range-row { display:flex; gap:.5rem; align-items:center; }
+        .filter-section .price-range-row input[type="range"] { flex:1; }
+        .filter-section .price-value { min-width:56px; text-align:right; font-weight:600; }
 
         /* Footer */
         footer.site-footer { margin-top:2rem; padding:1.25rem 0; color:var(--muted); border-top:1px solid #eef3ef; }
@@ -179,8 +190,11 @@
 
         <form id="filterForm" aria-describedby="filterHeading">
             <div class="filter-section">
-                <label for="priceRange">Max price</label>
-                <input id="priceRange" name="maxPrice" type="number" min="0" placeholder="e.g. 50" style="width:100%; padding:.4rem;">
+                <label for="priceRangeSlider">Max price</label>
+                <div class="price-range-row">
+                  <input id="priceRangeSlider" name="maxPrice" type="range" min="0" max="200" step="0.01">
+                  <div class="price-value">$<span id="priceRangeValue">200</span></div>
+                </div>
             </div>
 
             <div class="filter-section">
@@ -198,6 +212,12 @@
                 <label><input type="checkbox" name="tag" value="Eco Packaging"> Eco Packaging</label>
                 <label><input type="checkbox" name="tag" value="Natural"> Natural</label>
                 <label><input type="checkbox" name="tag" value="Cruelty-Free"> Cruelty-Free</label>
+                <label><input type="checkbox" name="tag" value="Small Batch"> Small Batch</label>
+                <label><input type="checkbox" name="tag" value="Cold Brew"> Cold Brew</label>
+                <label><input type="checkbox" name="tag" value="Co-op"> Co-op</label>
+                <label><input type="checkbox" name="tag" value="Fluoride"> Fluoride</label>
+                <label><input type="checkbox" name="tag" value="Oral Care"> Oral Care</label>
+                <label><input type="checkbox" name="tag" value="Ethical"> Ethical</label>
             </div>
 
             <div class="filter-actions">
@@ -205,6 +225,31 @@
                 <button type="button" id="clearFilters" class="btn">Clear</button>
             </div>
         </form>
+
+        <div class="filter-section">
+            <label for="sortSelect">Sort by</label>
+            <select id="sortSelect" class="sort-select">
+                <option value="">(none)</option>
+                <option value="price-asc">Price: Low → High</option>
+                <option value="price-desc">Price: High → Low</option>
+                <option value="name-asc">Name: A → Z</option>
+                <option value="name-desc">Name: Z → A</option>
+            </select>
+        </div>
+
+        <div class="filter-section">
+            <label>Previous searches</label>
+            <div id="prevSearchesList" style="max-height:140px; overflow:auto; border:1px solid #eef6f1; border-radius:8px; padding:.4rem; background:#fff"></div>
+        </div>
+
+        <div class="filter-section">
+            <label>Saved presets</label>
+            <div style="display:flex; gap:.5rem; margin-bottom:.5rem;">
+                <button id="savePreset" type="button" class="btn">Save preset</button>
+                <button id="clearPresets" type="button" class="btn">Clear presets</button>
+            </div>
+            <div id="presetList" style="max-height:120px; overflow:auto; border:1px solid #eef6f1; border-radius:8px; padding:.4rem; background:#fff"></div>
+        </div>
     </aside>
 
     <!-- Hero Section -->
@@ -215,9 +260,11 @@
             <div class="search-box">
                 <!-- added id to toggle -->
                 <button id="filterButton" class="filter-button" aria-label="Open filters">Filter</button>
-                <input type="text" placeholder="Search for a product" class="search-input">
+                <input id="mainSearchInput" type="text" placeholder="Search for a product" class="search-input" autocomplete="off">
+                <button id="recentBtn" class="filter-button" title="Recently viewed">Recent</button>
                 <button class="search-button">Search</button>
-                
+                <div id="autocompleteList" class="autocomplete-list" role="listbox" aria-hidden="true"></div>
+                <div id="recentDropdown" class="recent-dropdown" aria-hidden="true"></div>
             </div>
         </div>
     </section>
@@ -295,7 +342,7 @@
             const overlay = document.getElementById('filterOverlay');
             const applyBtn = document.getElementById('applyFilters');
             const clearBtn = document.getElementById('clearFilters');
-            const firstFocusable = document.getElementById('priceRange');
+            const firstFocusable = document.getElementById('priceRangeSlider') || document.getElementById('priceRange');
 
             function openPanel() {
                 panel.classList.add('open');
@@ -402,8 +449,23 @@
 
             const productGrid = document.querySelector('.product-grid');
             const heading = document.getElementById('results-heading');
-            const input = document.querySelector('.search-input');
+            const input = document.getElementById('mainSearchInput') || document.querySelector('.search-input');
             const button = document.querySelector('.search-button');
+            const priceSlider = document.getElementById('priceRangeSlider');
+            const priceValue = document.getElementById('priceRangeValue');
+            const sortSelect = document.getElementById('sortSelect');
+            const prevSearchesList = document.getElementById('prevSearchesList');
+            const presetList = document.getElementById('presetList');
+            const savePresetBtn = document.getElementById('savePreset');
+            const clearPresetsBtn = document.getElementById('clearPresets');
+            const recentBtn = document.getElementById('recentBtn');
+            const recentDropdown = document.getElementById('recentDropdown');
+            const autocompleteList = document.getElementById('autocompleteList');
+
+            // Storage keys & expiry (20 minutes)
+            const STORAGE_KEY = 'ff_prev_searches_v1';
+            const PRESET_KEY = 'ff_presets_v1';
+            const EXPIRY_MS = 20 * 60 * 1000;
 
             function render(list){
                 if(!productGrid) return;
@@ -446,8 +508,8 @@
             }
 
             function getActiveFilters(){
-                const maxStr = document.getElementById('priceRange')?.value || '';
-                const maxPrice = maxStr ? parseFloat(maxStr) : null;
+                const maxVal = priceSlider ? priceSlider.value : (document.getElementById('priceRange')?.value || '');
+                const maxPrice = (maxVal !== '' && maxVal !== null) ? parseFloat(maxVal) : null;
                 const selectedTags = Array.from(document.querySelectorAll('input[name="tag"]:checked')).map(i => i.value.toLowerCase());
                 return { maxPrice, selectedTags };
             }
@@ -465,6 +527,145 @@
                 }
                 return true;
             }
+
+            /* --- Storage helpers for previous searches & presets (client-side prototype using localStorage) --- */
+            function _readStore(key){
+                try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch(e){ return null; }
+            }
+            function _writeStore(key, value){
+                try { localStorage.setItem(key, JSON.stringify(value)); } catch(e) { /* ignore */ }
+            }
+
+            function clearOldStore(key){
+                const obj = _readStore(key);
+                if(!obj) return null;
+                const now = Date.now();
+                if(!obj.lastReset || (now - obj.lastReset) > EXPIRY_MS){
+                    const fresh = { lastReset: now, entries: [] };
+                    _writeStore(key, fresh);
+                    return fresh;
+                }
+                // prune entries older than expiry too
+                obj.entries = (obj.entries||[]).filter(e => (now - (e.ts||0)) <= EXPIRY_MS);
+                return obj;
+            }
+
+            function loadPrevSearches(){
+                const now = Date.now();
+                let store = _readStore(STORAGE_KEY);
+                if(!store){ store = { lastReset: now, entries: [] }; _writeStore(STORAGE_KEY, store); }
+                if((now - store.lastReset) > EXPIRY_MS){ store = { lastReset: now, entries: [] }; _writeStore(STORAGE_KEY, store); }
+                // prune
+                store.entries = (store.entries||[]).filter(e => (now - (e.ts||0)) <= EXPIRY_MS);
+                _writeStore(STORAGE_KEY, store);
+                return store.entries;
+            }
+
+            function savePrevSearch(rec){
+                if(!rec) return;
+                const now = Date.now();
+                let store = _readStore(STORAGE_KEY) || { lastReset: now, entries: [] };
+                if((now - store.lastReset) > EXPIRY_MS){ store = { lastReset: now, entries: [] }; }
+                const entry = Object.assign({ ts: now }, rec);
+                store.entries.unshift(entry);
+                // limit to 50
+                store.entries = store.entries.slice(0,50);
+                _writeStore(STORAGE_KEY, store);
+                renderPrevSearches();
+            }
+
+            function renderPrevSearches(){
+                if(!prevSearchesList) return;
+                const entries = loadPrevSearches();
+                prevSearchesList.innerHTML = '';
+                if(!entries.length){ prevSearchesList.textContent = 'No recent searches.'; return; }
+                entries.forEach((e, idx) => {
+                    const el = document.createElement('div');
+                    el.className = 'recent-item';
+                    const label = e.q ? `${e.q}` : `${e.filters ? JSON.stringify(e.filters) : ''}`;
+                    el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><div style="flex:1;">${label}</div><div style="font-size:0.85rem;color:var(--muted)">${new Date(e.ts).toLocaleTimeString()}</div></div>`;
+                    el.addEventListener('click', function(){
+                        // apply stored search
+                        applyStoredSearch(e);
+                        if(panel.classList.contains('open')) { /* keep panel open */ } else { /* keep current */ }
+                    });
+                    prevSearchesList.appendChild(el);
+                });
+            }
+
+            /* Presets */
+            function loadPresets(){
+                const now = Date.now();
+                let store = _readStore(PRESET_KEY) || { lastReset: now, entries: [] };
+                if((now - store.lastReset) > EXPIRY_MS){ store = { lastReset: now, entries: [] }; _writeStore(PRESET_KEY, store); }
+                // prune entries older than expiry
+                store.entries = (store.entries||[]).filter(p => (now - (p.ts||0)) <= EXPIRY_MS);
+                _writeStore(PRESET_KEY, store);
+                return store.entries;
+            }
+
+            function savePreset(){
+                const now = Date.now();
+                let store = _readStore(PRESET_KEY) || { lastReset: now, entries: [] };
+                if((now - store.lastReset) > EXPIRY_MS){ store = { lastReset: now, entries: [] }; }
+                const preset = { ts: now, filters: getActiveFilters(), sort: sortSelect?.value || '' };
+                store.entries.unshift(preset);
+                store.entries = store.entries.slice(0,20);
+                _writeStore(PRESET_KEY, store);
+                renderPresets();
+            }
+
+            function renderPresets(){
+                if(!presetList) return;
+                const presets = loadPresets();
+                presetList.innerHTML = '';
+                if(!presets.length){ presetList.textContent = 'No saved presets.'; return; }
+                presets.forEach((p, idx)=>{
+                    const el = document.createElement('div');
+                    el.className = 'recent-item';
+                    el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><div style="flex:1;">Preset ${idx+1}</div><div style="display:flex;gap:.5rem"><button data-idx="${idx}" class="apply-preset">Apply</button><button data-idx="${idx}" class="del-preset">Delete</button></div></div>`;
+                    presetList.appendChild(el);
+                });
+                // attach handlers
+                Array.from(presetList.querySelectorAll('.apply-preset')).forEach(btn=> btn.addEventListener('click', function(e){
+                    const idx = Number(this.dataset.idx || 0);
+                    const presets = loadPresets();
+                    const p = presets[idx]; if(p) applyStoredSearch({ q: '', filters: p.filters, sort: p.sort });
+                }));
+                Array.from(presetList.querySelectorAll('.del-preset')).forEach(btn=> btn.addEventListener('click', function(e){
+                    const idx = Number(this.dataset.idx || 0);
+                    let store = _readStore(PRESET_KEY) || { entries: [], lastReset: Date.now() };
+                    store.entries.splice(idx,1);
+                    _writeStore(PRESET_KEY, store);
+                    renderPresets();
+                }));
+            }
+
+            function clearPresets(){
+                _writeStore(PRESET_KEY, { lastReset: Date.now(), entries: [] });
+                renderPresets();
+            }
+
+            function applyStoredSearch(e){
+                // e may be { q, filters, sort }
+                if(e.filters){
+                    // set tags
+                    document.getElementById('filterForm')?.reset();
+                    Array.from(document.querySelectorAll('input[name="tag"]')).forEach(cb=> cb.checked = false);
+                    (e.filters.selectedTags||[]).forEach(t => {
+                        const el = Array.from(document.querySelectorAll('input[name="tag"]')).find(i => i.value.toLowerCase() === t.toLowerCase());
+                        if(el) el.checked = true;
+                    });
+                    if(priceSlider && typeof e.filters.maxPrice === 'number'){
+                        priceSlider.value = e.filters.maxPrice;
+                        priceValue.textContent = Number(e.filters.maxPrice).toFixed(2);
+                    }
+                }
+                if(e.sort && sortSelect) sortSelect.value = e.sort;
+                if(e.q !== undefined){ if(input) input.value = e.q; }
+                searchAndRender((e.q||input?.value||'').toString());
+            }
+
 
             function sampleRandom(arr, n){
                 const out = [];
@@ -489,18 +690,91 @@
                 }
 
                 // otherwise apply query + filters
-                const list = products.filter(p => matchesQuery(p, q) && matchesFilters(p, filters));
+                let list = products.filter(p => matchesQuery(p, q) && matchesFilters(p, filters));
+                // apply sorting
+                const sort = sortSelect?.value || '';
+                if(sort){
+                    if(sort === 'price-asc') list.sort((a,b)=> a.price - b.price);
+                    if(sort === 'price-desc') list.sort((a,b)=> b.price - a.price);
+                    if(sort === 'name-asc') list.sort((a,b)=> a.name.localeCompare(b.name));
+                    if(sort === 'name-desc') list.sort((a,b)=> b.name.localeCompare(a.name));
+                }
                 render(list);
                 if(heading){ heading.textContent = q ? `Results for: ${q}` : 'Featured Products'; }
+                // Save this search (prototype) so Recent/Previous works
+                try { savePrevSearch({ q: q || '', filters, sort }); } catch(e) { /* ignore */ }
             }
 
             // Wire UI
             if(button){ button.addEventListener('click', (e)=>{ e.preventDefault(); searchAndRender(input?.value || ''); }); }
-            if(input){ input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); searchAndRender(input.value); } }); }
+            if(input){ 
+                // Enter triggers search
+                input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); searchAndRender(input.value); } });
+                // autocomplete
+                input.addEventListener('input', function(e){
+                    const q = (this.value||'').toLowerCase().trim();
+                    if(!q){ autocompleteList.classList.remove('open'); autocompleteList.innerHTML = ''; return; }
+                    // gather suggestions from product names & tags
+                    const names = products.map(p => p.name).filter(Boolean);
+                    const tags = Array.from(new Set(products.flatMap(p=>p.tags||[])));
+                    const pool = Array.from(new Set([...names, ...tags]));
+                    const matches = pool.filter(x => x.toLowerCase().includes(q)).slice(0,8);
+                    autocompleteList.innerHTML = '';
+                    matches.forEach(m => {
+                        const it = document.createElement('div');
+                        it.className = 'autocomplete-item';
+                        it.textContent = m;
+                        it.addEventListener('click', ()=>{ input.value = m; autocompleteList.classList.remove('open'); searchAndRender(m); });
+                        autocompleteList.appendChild(it);
+                    });
+                    if(matches.length) autocompleteList.classList.add('open'); else autocompleteList.classList.remove('open');
+                });
+                // close autocomplete on escape or blur
+                input.addEventListener('keydown', function(e){ if(e.key==='Escape'){ autocompleteList.classList.remove('open'); } });
+                document.addEventListener('click', function(e){ if(!e.target.closest('.search-box')) { autocompleteList.classList.remove('open'); recentDropdown.classList.remove('open'); } });
+            }
+
+            // price slider
+            if(priceSlider){
+                // set sensible min/max from product prices
+                const prices = products.map(p=>Number(p.price)||0).filter(n=>!isNaN(n));
+                const max = Math.max(20, Math.ceil(Math.max(...prices)));
+                priceSlider.min = 0; priceSlider.max = max; priceSlider.step = 0.01; priceSlider.value = max;
+                if(priceValue) priceValue.textContent = Number(priceSlider.value).toFixed(2);
+                priceSlider.addEventListener('input', function(){ if(priceValue) priceValue.textContent = Number(this.value).toFixed(2); });
+            }
+
+            // recent dropdown
+            if(recentBtn && recentDropdown){
+                recentBtn.addEventListener('click', function(e){ e.preventDefault(); recentDropdown.classList.toggle('open'); renderRecentDropdown(); });
+            }
+
+            function renderRecentDropdown(){
+                if(!recentDropdown) return;
+                const entries = loadPrevSearches();
+                recentDropdown.innerHTML = '';
+                if(!entries.length) { recentDropdown.textContent = 'No recent searches.'; return; }
+                entries.slice(0,8).forEach(e=>{
+                    const d = document.createElement('div'); d.className = 'recent-item'; d.textContent = e.q || JSON.stringify(e.filters||{});
+                    d.addEventListener('click', ()=>{ applyStoredSearch(e); recentDropdown.classList.remove('open'); });
+                    recentDropdown.appendChild(d);
+                });
+            }
+
+            // presets
+            if(savePresetBtn) savePresetBtn.addEventListener('click', function(){ savePreset(); });
+            if(clearPresetsBtn) clearPresetsBtn.addEventListener('click', function(){ clearPresets(); });
+            renderPrevSearches(); renderPresets();
 
             // Expose filter panel hooks
             window.applyFiltersFromPanel = function(){ searchAndRender(input?.value || ''); };
-            window.clearFiltersFromPanel = function(){ document.getElementById('filterForm')?.reset(); searchAndRender(input?.value || ''); };
+            window.clearFiltersFromPanel = function(){ 
+                document.getElementById('filterForm')?.reset(); 
+                // reset slider to max
+                if(priceSlider){ priceSlider.value = priceSlider.max; if(priceValue) priceValue.textContent = Number(priceSlider.value).toFixed(2); }
+                // clear presets UI not necessary
+                searchAndRender(input?.value || ''); 
+            };
 
             // Load from ?q=
             const params = new URLSearchParams(location.search);
