@@ -59,6 +59,13 @@
         .search-box .search-input { padding:.5rem .6rem; border-radius:8px; border:1px solid #e6f3ef; min-width:240px; box-sizing:border-box; }
         .search-box .search-button, .search-box .filter-button { padding:.5rem .75rem; border-radius:8px; border:0; background:var(--brand); color:#fff; cursor:pointer; }
         .search-box .filter-button { background:transparent; color:var(--brand); border:1px solid rgba(31,143,107,0.12); }
+        .search-box { position:relative; }
+        .recent-dropdown, .autocomplete-list {
+            position:absolute; top:100%; right:0; background:#fff; box-shadow:0 6px 18px rgba(0,0,0,0.08); border-radius:8px; padding:.5rem; margin-top:.5rem; width:260px; z-index:1200; display:none;
+        }
+        .recent-dropdown.open, .autocomplete-list.open { display:block; }
+        .autocomplete-item, .recent-item { padding:.35rem .5rem; cursor:pointer; border-radius:6px; }
+        .autocomplete-item:hover, .recent-item:hover { background: #f3faf6; }
 
         /* Product grid */
         .product-listings .product-grid, .product-grid {
@@ -94,6 +101,10 @@
             cursor:pointer;
         }
     /* non-disabled styling for demo so all CTAs look the same */
+        .filter-section .sort-select { width:100%; padding:.4rem; border-radius:8px; border:1px solid #eef6f1; }
+        .filter-section .price-range-row { display:flex; gap:.5rem; align-items:center; }
+        .filter-section .price-range-row input[type="range"] { flex:1; }
+        .filter-section .price-value { min-width:56px; text-align:right; font-weight:600; }
 
         /* Footer */
         footer.site-footer { margin-top:2rem; padding:1.25rem 0; color:var(--muted); border-top:1px solid #eef3ef; }
@@ -211,8 +222,11 @@
 
         <form id="filterForm" aria-describedby="filterHeading">
             <div class="filter-section">
-                <label for="priceRange">Max price</label>
-                <input id="priceRange" name="maxPrice" type="number" min="0" placeholder="e.g. 50" style="width:100%; padding:.4rem;">
+                <label for="priceRangeSlider">Max price</label>
+                <div class="price-range-row">
+                  <input id="priceRangeSlider" name="maxPrice" type="range" min="0" max="200" step="0.01">
+                  <div class="price-value">$<span id="priceRangeValue">200</span></div>
+                </div>
             </div>
 
             <div class="filter-section">
@@ -230,6 +244,12 @@
                 <label><input type="checkbox" name="tag" value="Eco Packaging"> Eco Packaging</label>
                 <label><input type="checkbox" name="tag" value="Natural"> Natural</label>
                 <label><input type="checkbox" name="tag" value="Cruelty-Free"> Cruelty-Free</label>
+                <label><input type="checkbox" name="tag" value="Small Batch"> Small Batch</label>
+                <label><input type="checkbox" name="tag" value="Cold Brew"> Cold Brew</label>
+                <label><input type="checkbox" name="tag" value="Co-op"> Co-op</label>
+                <label><input type="checkbox" name="tag" value="Fluoride"> Fluoride</label>
+                <label><input type="checkbox" name="tag" value="Oral Care"> Oral Care</label>
+                <label><input type="checkbox" name="tag" value="Ethical"> Ethical</label>
             </div>
 
             <div class="filter-actions">
@@ -237,6 +257,31 @@
                 <button type="button" id="clearFilters" class="btn">Clear</button>
             </div>
         </form>
+
+        <div class="filter-section">
+            <label for="sortSelect">Sort by</label>
+            <select id="sortSelect" class="sort-select">
+                <option value="">(none)</option>
+                <option value="price-asc">Price: Low → High</option>
+                <option value="price-desc">Price: High → Low</option>
+                <option value="name-asc">Name: A → Z</option>
+                <option value="name-desc">Name: Z → A</option>
+            </select>
+        </div>
+
+        <div class="filter-section">
+            <label>Previous searches</label>
+            <div id="prevSearchesList" style="max-height:140px; overflow:auto; border:1px solid #eef6f1; border-radius:8px; padding:.4rem; background:#fff"></div>
+        </div>
+
+        <div class="filter-section">
+            <label>Saved presets</label>
+            <div style="display:flex; gap:.5rem; margin-bottom:.5rem;">
+                <button id="savePreset" type="button" class="btn">Save preset</button>
+                <button id="clearPresets" type="button" class="btn">Clear presets</button>
+            </div>
+            <div id="presetList" style="max-height:120px; overflow:auto; border:1px solid #eef6f1; border-radius:8px; padding:.4rem; background:#fff"></div>
+        </div>
     </aside>
 
     <!-- Hero Section -->
@@ -247,9 +292,11 @@
             <div class="search-box">
                 <!-- added id to toggle -->
                 <button id="filterButton" class="filter-button" aria-label="Open filters">Filter</button>
-                <input type="text" placeholder="Search for a product" class="search-input">
+                <input id="mainSearchInput" type="text" placeholder="Search for a product" class="search-input" autocomplete="off">
+                <button id="recentBtn" class="filter-button" title="Recently viewed">Recent</button>
                 <button class="search-button">Search</button>
-                
+                <div id="autocompleteList" class="autocomplete-list" role="listbox" aria-hidden="true"></div>
+                <div id="recentDropdown" class="recent-dropdown" aria-hidden="true"></div>
             </div>
         </div>
     </section>
@@ -327,7 +374,7 @@
             const overlay = document.getElementById('filterOverlay');
             const applyBtn = document.getElementById('applyFilters');
             const clearBtn = document.getElementById('clearFilters');
-            const firstFocusable = document.getElementById('priceRange');
+            const firstFocusable = document.getElementById('priceRangeSlider') || document.getElementById('priceRange');
 
             function openPanel() {
                 panel.classList.add('open');
@@ -390,181 +437,390 @@
         <!-- Products dataset search/render -->
         <script>
             (function(){
-            const products = [
-                    { name: "Eco Cotton Shirt", category: "Shirt", description: "Made from 100% organic cotton and ethically produced in Canada.", price: 39.99, image: "images/shirt1.jpg", tags: ["Eco-Friendly", "Canadian Made", "Organic"] },
-                    { name: "Organic Linen Shirt", category: "Shirt", description: "Lightweight linen shirt designed for breathable summer comfort.", price: 44.99, image: "images/shirt2.jpg", tags: ["Sustainable", "Organic"] },
-                    { name: "Recycled Cotton Tee", category: "Shirt", description: "Soft tee crafted from recycled cotton fibers to reduce waste.", price: 29.99, image: "images/shirt3.jpg", tags: ["Recycled", "Eco-Friendly"] },
-                    { name: "Hemp Blend Casual Shirt", category: "Shirt", description: "Durable hemp-cotton blend shirt that’s naturally antibacterial.", price: 49.99, image: "images/shirt4.jpg", tags: ["Organic", "Sustainable"] },
-                    { name: "Plain Shirt", category: "Shirt", description: "Timeless white button-up made from GOTS-certified organic cotton.", price: 89.50, image: "images/shirt5.jpg", tags: ["Recycled", "Sustainable"] },
-                    { name: "Wool Shirt", category: "Shirt", description: "Ethically sourced wool from small local farms, soft and warm.", price: 74.99, image: "images/shirt6.jpg", tags: ["Fair Trade", "Canadian Made"] },
-                    { name: "White Longsleeve Shirt", category: "Shirt", description: "Breathable white linen shirt with a relaxed fit and natural finish.", price: 59.99, image: "images/shirt7.jpg", tags: ["Vegan", "Eco-Friendly"] },
-                    { name: "Old Classic Shirt", category: "Shirt", description: "Soft white everyday shirt crafted from 70% recycled cotton fibers.", price: 69.99, image: "images/shirt8.jpg", tags: ["Sustainable", "Recycled", "Vegan"] },
+    const products = [
+        { name: "Eco Cotton Shirt", category: "Shirt", description: "Made from 100% organic cotton and ethically produced in Canada.", price: 39.99, image: "images/shirt1.jpg", tags: ["Eco-Friendly", "Canadian Made", "Organic"] },
+        { name: "Organic Linen Shirt", category: "Shirt", description: "Lightweight linen shirt designed for breathable summer comfort.", price: 44.99, image: "images/shirt2.jpg", tags: ["Sustainable", "Organic"] },
+        { name: "Recycled Cotton Tee", category: "Shirt", description: "Soft tee crafted from recycled cotton fibers to reduce waste.", price: 29.99, image: "images/shirt3.jpg", tags: ["Recycled", "Eco-Friendly"] },
+        { name: "Hemp Blend Casual Shirt", category: "Shirt", description: "Durable hemp-cotton blend shirt that’s naturally antibacterial.", price: 49.99, image: "images/shirt4.jpg", tags: ["Organic", "Sustainable"] },
+        { name: "Plain Shirt", category: "Shirt", description: "Timeless white button-up made from GOTS-certified organic cotton.", price: 89.50, image: "images/shirt5.jpg", tags: ["Recycled", "Sustainable"] },
+        { name: "Wool Shirt", category: "Shirt", description: "Ethically sourced wool from small local farms, soft and warm.", price: 74.99, image: "images/shirt6.jpg", tags: ["Fair Trade", "Canadian Made"] },
+        { name: "White Longsleeve Shirt", category: "Shirt", description: "Breathable white linen shirt with a relaxed fit and natural finish.", price: 59.99, image: "images/shirt7.jpg", tags: ["Vegan", "Eco-Friendly"] },
+        { name: "Old Classic Shirt", category: "Shirt", description: "Soft white everyday shirt crafted from 70% recycled cotton fibers.", price: 69.99, image: "images/shirt8.jpg", tags: ["Sustainable", "Recycled", "Vegan"] },
 
-                    // Products from message (1)
-                    { name: "Province of Canada Monday Tee (Natural)", category: "Shirt", description: "Unisex natural tee from Province of Canada.", price: 42.00, image: "images/real-shirt1.png", tags: ["Organic", "Canadian Made"], url: "https://provinceofcanada.com/products/monday-tee-natural-unisex" },
-                    { name: "tentree Men's Baker T-Shirt", category: "Shirt", description: "Basic white t-shirt made sustainably.", price: 38.00, image: "images/real-shirt2.png", tags: ["Sustainable", "Organic"], url: "https://www.tentree.com/products/mens-basic-tshirt-white" },
-                    { name: "Roots Organic Cooper Relaxed Crew", category: "Shirt", description: "Relaxed organic crew from Roots.", price: 78.00, image: "images/real-shirt3.jpg", tags: ["Organic"], url: "https://www.roots.com/us/en/organic-cooper-relaxed-crew-38040949.html" },
+        { name: "Province of Canada Monday Tee (Natural)", category: "Shirt", description: "Unisex natural tee from Province of Canada.", price: 42.00, image: "images/real-shirt1.png", tags: ["Organic", "Canadian Made"], url: "https://provinceofcanada.com/products/monday-tee-natural-unisex" },
+        { name: "tentree Men's Baker T-Shirt", category: "Shirt", description: "Basic white t-shirt made sustainably.", price: 38.00, image: "images/real-shirt2.png", tags: ["Sustainable", "Organic"], url: "https://www.tentree.com/products/mens-basic-tshirt-white" },
+        { name: "Roots Organic Cooper Relaxed Crew", category: "Shirt", description: "Relaxed organic crew from Roots.", price: 78.00, image: "images/real-shirt3.jpg", tags: ["Organic"], url: "https://www.roots.com/us/en/organic-cooper-relaxed-crew-38040949.html" },
 
-                    { name: "Rainforest Roast Blend", category: "Coffee", description: "Medium roast from Rainforest Alliance-certified farms.", price: 16.99, image: "images/coffee1.jpg", tags: ["Fair Trade", "Sustainable", "Rainforest Alliance"], url: "https://www.coffeeam.com/products/decaf-coastal-calm" },
-                    { name: "Organic Morning Grind", category: "Coffee", description: "Bright breakfast blend from organic Arabica beans.", price: 18.50, image: "images/coffee2.jpg", tags: ["Organic", "Eco-Friendly", "Canadian Made"], url: "https://www.coffeeam.com/products/decaf-coastal-calm" },
-                    { name: "Ethical Espresso Roast", category: "Coffee", description: "Dark roast espresso with rich crema.", price: 19.99, image: "images/coffee3.jpg", tags: ["Fair Trade", "Small Batch", "Sustainable"], url: "https://www.coffeeam.com/products/decaf-coastal-calm" },
-                    { name: "Coastal Cold Brew Blend", category: "Coffee", description: "Smooth low-acid blend ideal for cold brew.", price: 17.25, image: "images/coffee4.jpg", tags: ["Ethical", "Cold Brew", "Sustainable"], url: "https://www.coffeeam.com/products/decaf-coastal-calm" },
-                    { name: "Local Artisan Grind", category: "Coffee", description: "Craft roasted by small Vancouver roasters.", price: 20.75, image: "images/coffee5.jpg", tags: ["Canadian Made", "Fair Trade", "Small Batch"], url: "https://www.coffeeam.com/products/decaf-coastal-calm" },
-                    { name: "Zero Waste Decaf", category: "Coffee", description: "Swiss-water processed decaf in compostable packaging.", price: 18.99, image: "images/coffee6.jpg", tags: ["Zero Waste", "Eco Packaging"], url: "https://www.coffeeam.com/products/decaf-coastal-calm" },
-                    { name: "Farmers’ Collective Roast", category: "Coffee", description: "Co-op beans from smallholder farmers in Ethiopia.", price: 21.50, image: "images/coffee7.jpg", tags: ["Co-op", "Fair Trade", "Organic"], url: "https://www.coffeeam.com/products/decaf-coastal-calm" },
-                    { name: "Maplewood Morning Blend", category: "Coffee", description: "Canadian-roasted light blend with subtle maple sweetness.", price: 17.99, image: "images/coffee8.jpg", tags: ["Canadian Made", "Eco-Friendly", "Organic"], url: "https://www.coffeeam.com/products/decaf-coastal-calm" },
+        { name: "Rainforest Roast Blend", category: "Coffee", description: "Medium roast from Rainforest Alliance-certified farms.", price: 16.99, image: "images/coffee1.jpg", tags: ["Fair Trade", "Sustainable", "Rainforest Alliance"], url: "https://www.coffeeam.com/products/decaf-coastal-calm" },
+        { name: "Organic Morning Grind", category: "Coffee", description: "Bright breakfast blend from organic Arabica beans.", price: 18.50, image: "images/coffee2.jpg", tags: ["Organic", "Eco-Friendly", "Canadian Made"], url: "https://www.coffeeam.com/products/decaf-coastal-calm" },
+        { name: "Ethical Espresso Roast", category: "Coffee", description: "Dark roast espresso with rich crema.", price: 19.99, image: "images/coffee3.jpg", tags: ["Fair Trade", "Small Batch", "Sustainable"], url: "https://www.coffeeam.com/products/decaf-coastal-calm" },
+        { name: "Coastal Cold Brew Blend", category: "Coffee", description: "Smooth low-acid blend ideal for cold brew.", price: 17.25, image: "images/coffee4.jpg", tags: ["Ethical", "Cold Brew", "Sustainable"], url: "https://www.coffeeam.com/products/decaf-coastal-calm" },
+        { name: "Local Artisan Grind", category: "Coffee", description: "Craft roasted by small Vancouver roasters.", price: 20.75, image: "images/coffee5.jpg", tags: ["Canadian Made", "Fair Trade", "Small Batch"], url: "https://www.coffeeam.com/products/decaf-coastal-calm" },
+        { name: "Zero Waste Decaf", category: "Coffee", description: "Swiss-water processed decaf in compostable packaging.", price: 18.99, image: "images/coffee6.jpg", tags: ["Zero Waste", "Eco Packaging"], url: "https://www.coffeeam.com/products/decaf-coastal-calm" },
+        { name: "Farmers’ Collective Roast", category: "Coffee", description: "Co-op beans from smallholder farmers in Ethiopia.", price: 21.50, image: "images/coffee7.jpg", tags: ["Co-op", "Fair Trade", "Organic"], url: "https://www.coffeeam.com/products/decaf-coastal-calm" },
+        { name: "Maplewood Morning Blend", category: "Coffee", description: "Canadian-roasted light blend with subtle maple sweetness.", price: 17.99, image: "images/coffee8.jpg", tags: ["Canadian Made", "Eco-Friendly", "Organic"], url: "https://www.coffeeam.com/products/decaf-coastal-calm" },
 
-                    { name: "Green Beaver Spearmint Toothpaste", category: "Toothpaste", description: "Natural spearmint toothpaste by Green Beaver.", price: 6.99, image: "images/toothpaste1.png", tags: ["Natural", "Eco-Friendly"], url: "https://greenbeaver.com/collections/toothpaste" },
-                    { name: "X-Pur Cario Spearmint Toothpaste", category: "Toothpaste", description: "Fluoride toothpaste from X-Pur.", price: 7.99, image: "images/toothpaste2.png", tags: ["Fluoride", "Oral Care"], url: "https://xpur.ca/collections/toothpaste" },
-                    { name: "Zero Waste Toothpaste Mint by Ecovana", category: "Toothpaste", description: "Zero waste toothpaste by Ecovana.", price: 9.99, image: "images/toothpaste3.png", tags: ["Zero Waste", "Eco Packaging"], url: "https://ecovana.ca/products/zero-waste-toothpaste" },
+        { name: "Green Beaver Spearmint Toothpaste", category: "Toothpaste", description: "Natural spearmint toothpaste by Green Beaver.", price: 6.99, image: "images/toothpaste1.png", tags: ["Natural", "Eco-Friendly"], url: "https://greenbeaver.com/collections/toothpaste" },
+        { name: "X-Pur Cario Spearmint Toothpaste", category: "Toothpaste", description: "Fluoride toothpaste from X-Pur.", price: 7.99, image: "images/toothpaste2.png", tags: ["Fluoride", "Oral Care"], url: "https://xpur.ca/collections/toothpaste" },
+        { name: "Zero Waste Toothpaste Mint by Ecovana", category: "Toothpaste", description: "Zero waste toothpaste by Ecovana.", price: 9.99, image: "images/toothpaste3.png", tags: ["Zero Waste", "Eco Packaging"], url: "https://ecovana.ca/products/zero-waste-toothpaste" },
 
-                    { name: "Matt & Nat LEAF Vegan Sneakers", category: "Shoes", description: "Vegan sneakers by Matt & Nat.", price: 129.00, image: "images/sneaker1.png", tags: ["Vegan"], url: "https://mattandnat.com/collections/footwear" },
-                    { name: "Matt & Nat Marci Vegan Sneaker", category: "Shoes", description: "Marci vegan sneaker by Matt & Nat.", price: 119.00, image: "images/sneaker2.png", tags: ["Vegan"], url: "https://mattandnat.com/collections/footwear" },
+        { name: "Matt & Nat LEAF Vegan Sneakers", category: "Shoes", description: "Vegan sneakers by Matt & Nat.", price: 129.00, image: "images/sneaker1.png", tags: ["Vegan"], url: "https://mattandnat.com/collections/footwear" },
+        { name: "Matt & Nat Marci Vegan Sneaker", category: "Shoes", description: "Marci vegan sneaker by Matt & Nat.", price: 119.00, image: "images/sneaker2.png", tags: ["Vegan"], url: "https://mattandnat.com/collections/footwear" },
 
-                    { name: "ATTITUDE Skin Routine", category: "Skincare", description: "ATTITUDE skin routine collection.", price: 49.00, image: "images/skincare1.png", tags: ["Vegan", "Cruelty-Free"], url: "https://attitudeliving.ca/collections/skin-care" },
-                    { name: "ATTITUDE Oceanly Radiant Skin Daily Facial Care Routine Box Set", category: "Skincare", description: "Oceanly Radiant daily facial care set.", price: 69.00, image: "images/skincare2.png", tags: ["Vegan", "Cruelty-Free"], url: "https://attitudeliving.ca/collections/skin-care" },
-                    { name: "Three Ships Dew Drops Mushroom + Kakadu Plum Hyaluronic Acid Serum", category: "Skincare", description: "Hydrating serum with mushroom and Kakadu plum.", price: 38.00, image: "images/skincare3.png", tags: ["Vegan", "Cruelty-Free"], url: "https://threeshipsbeauty.com/products/dew-drops" },
-                    { name: "Rocky Mountain Soap Co. Calming Face Serum", category: "Skincare", description: "Calming face serum by Rocky Mountain Soap Co", price: 42.00, image: "images/skincare4.jpg", tags: ["Natural", "Cruelty-Free"], url: "https://rockymountainsoap.com/products/calming-face-serum" },
+        { name: "ATTITUDE Skin Routine", category: "Skincare", description: "ATTITUDE skin routine collection.", price: 49.00, image: "images/skincare1.png", tags: ["Vegan", "Cruelty-Free"], url: "https://attitudeliving.ca/collections/skin-care" },
+        { name: "ATTITUDE Oceanly Radiant Skin Daily Facial Care Routine Box Set", category: "Skincare", description: "Oceanly Radiant daily facial care set.", price: 69.00, image: "images/skincare2.png", tags: ["Vegan", "Cruelty-Free"], url: "https://attitudeliving.ca/collections/skin-care" },
+        { name: "Three Ships Dew Drops Mushroom + Kakadu Plum Hyaluronic Acid Serum", category: "Skincare", description: "Hydrating serum with mushroom and Kakadu plum.", price: 38.00, image: "images/skincare3.png", tags: ["Vegan", "Cruelty-Free"], url: "https://threeshipsbeauty.com/products/dew-drops" },
+        { name: "Rocky Mountain Soap Co. Calming Face Serum", category: "Skincare", description: "Calming face serum by Rocky Mountain Soap Co", price: 42.00, image: "images/skincare4.jpg", tags: ["Natural", "Cruelty-Free"], url: "https://rockymountainsoap.com/products/calming-face-serum" },
 
-                    { name: "ATTITUDE Laundry Detergent (Citrus Zest)", category: "Home Cleaning", description: "Laundry detergent by ATTITUDE.", price: 15.99, image: "images/homecleaning.png", tags: ["Eco-Friendly"], url: "https://attitudeliving.ca/collections/laundry" },
-                    { name: "Eco-Max All Purpose Cleaner (Natural Lemongrass)", category: "Home Cleaning", description: "All purpose cleaner by Eco-Max.", price: 6.99, image: "images/homecleaning2.png", tags: ["Eco-Friendly"], url: "https://eco-max.com/products/all-purpose-cleaner" },
-                    { name: "The Bare Home Zero-Waste Multi-Purpose Cleaner", category: "Home Cleaning", description: "Zero-waste multi-purpose cleaner.", price: 12.99, image: "images/homecleaning3.png", tags: ["Zero Waste", "Eco-Friendly"], url: "https://thebarehome.ca/products/all-purpose-cleaner" },
-                    { name: "Nellie’s Laundry Soda", category: "Home Cleaning", description: "Laundry soda by Nellie’s.", price: 19.99, image: "images/homecleaning4.png", tags: ["Eco-Friendly"], url: "https://nelliesclean.com/products/laundry-soda" }
-            ];
+        { name: "ATTITUDE Laundry Detergent (Citrus Zest)", category: "Home Cleaning", description: "Laundry detergent by ATTITUDE.", price: 15.99, image: "images/homecleaning.png", tags: ["Eco-Friendly"], url: "https://attitudeliving.ca/collections/laundry" },
+        { name: "Eco-Max All Purpose Cleaner (Natural Lemongrass)", category: "Home Cleaning", description: "All purpose cleaner by Eco-Max.", price: 6.99, image: "images/homecleaning2.png", tags: ["Eco-Friendly"], url: "https://eco-max.com/products/all-purpose-cleaner" },
+        { name: "The Bare Home Zero-Waste Multi-Purpose Cleaner", category: "Home Cleaning", description: "Zero-waste multi-purpose cleaner.", price: 12.99, image: "images/homecleaning3.png", tags: ["Zero Waste", "Eco-Friendly"], url: "https://thebarehome.ca/products/all-purpose-cleaner" },
+        { name: "Nellie’s Laundry Soda", category: "Home Cleaning", description: "Laundry soda by Nellie’s.", price: 19.99, image: "images/homecleaning4.png", tags: ["Eco-Friendly"], url: "https://nelliesclean.com/products/laundry-soda" }
+    ];
 
-            const productGrid = document.querySelector('.product-grid');
-            const heading = document.getElementById('results-heading');
-            const input = document.querySelector('.search-input');
-            const button = document.querySelector('.search-button');
+    // DOM references
+    const productGrid = document.querySelector('.product-grid');
+    const heading = document.getElementById('results-heading');
+    const input = document.getElementById('mainSearchInput') || document.querySelector('.search-input');
+    const button = document.querySelector('.search-button');
+    const priceSlider = document.getElementById('priceRangeSlider');
+    const priceValue = document.getElementById('priceRangeValue');
+    const sortSelect = document.getElementById('sortSelect');
+    const prevSearchesList = document.getElementById('prevSearchesList');
+    const presetList = document.getElementById('presetList');
+    const savePresetBtn = document.getElementById('savePreset');
+    const clearPresetsBtn = document.getElementById('clearPresets');
+    const recentBtn = document.getElementById('recentBtn');
+    const recentDropdown = document.getElementById('recentDropdown');
+    const autocompleteList = document.getElementById('autocompleteList');
 
-            function render(list){
-                if(!productGrid) return;
-                productGrid.innerHTML = '';
-                if(!list || list.length === 0){
-                    const empty = document.createElement('div');
-                    empty.style.gridColumn = '1/-1';
-                    empty.style.textAlign = 'center';
-                    empty.style.padding = '1rem';
-                    empty.textContent = 'No products found.';
-                    productGrid.appendChild(empty);
-                    return;
-                }
-                list.forEach(p => {
-                    const isCanadian = (p.tags || []).some(t => String(t).toLowerCase() === 'canadian made');
-                    const card = document.createElement('div');
-                    card.className = 'product-card';
-                    card.innerHTML = `
-                    <div class="product-image-placeholder">
-                        <img src="${p.image}" alt="${p.name}" onerror="this.parentNode.textContent='Product Image'">
-                    </div>
-                    <h3>${p.name}${isCanadian ? `<span class="canadian-leaf" title="Canadian made" aria-hidden="true">🍁</span>` : ''}</h3>
-                    <p class="price">$${(p.price || 0).toFixed(2)}</p>
-                    <p class="product-description">${p.description || ''}</p>
-                    <div class="badges">${(p.tags||[]).map(t=>`<span class="badge">${t}</span>`).join(', ')}</div>
-                    <div class="card-actions">
-                        ${p.url 
-                            ? `<a class="cta-button" href="${p.url}" target="_blank" rel="noopener noreferrer">Check It Out</a>` 
-                            : `<button class="cta-button" type="button">Check It Out</button>`}
-                    </div>
-                `;
-                    productGrid.appendChild(card);
-                });
+    // Storage keys & expiry (20 minutes)
+    const STORAGE_KEY = 'ff_prev_searches_v1';
+    const PRESET_KEY = 'ff_presets_v1';
+    const EXPIRY_MS = 20 * 60 * 1000;
+
+    /* ---------- helpers ---------- */
+    function normalize(s){ return (s||'').toString().trim().toLowerCase(); }
+
+    function sampleRandom(arr, n){
+        const out = [];
+        const src = arr.slice();
+        while(out.length < n && src.length){
+            const idx = Math.floor(Math.random() * src.length);
+            out.push(src.splice(idx,1)[0]);
+        }
+        return out;
+    }
+
+    function _readStore(key){
+        try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch(e){ return null; }
+    }
+    function _writeStore(key, value){
+        try { localStorage.setItem(key, JSON.stringify(value)); } catch(e) { /* ignore */ }
+    }
+
+    function clearOldStore(key){
+        const obj = _readStore(key);
+        if(!obj) return null;
+        const now = Date.now();
+        if(!obj.lastReset || (now - obj.lastReset) > EXPIRY_MS){
+            const fresh = { lastReset: now, entries: [] };
+            _writeStore(key, fresh);
+            return fresh;
+        }
+        obj.entries = (obj.entries||[]).filter(e => (now - (e.ts||0)) <= EXPIRY_MS);
+        return obj;
+    }
+
+    function loadPrevSearches(){
+        const now = Date.now();
+        let store = _readStore(STORAGE_KEY);
+        if(!store){ store = { lastReset: now, entries: [] }; _writeStore(STORAGE_KEY, store); }
+        if((now - store.lastReset) > EXPIRY_MS){ store = { lastReset: now, entries: [] }; _writeStore(STORAGE_KEY, store); }
+        store.entries = (store.entries||[]).filter(e => (now - (e.ts||0)) <= EXPIRY_MS);
+        _writeStore(STORAGE_KEY, store);
+        return store.entries;
+    }
+
+    function savePrevSearch(rec){
+        if(!rec) return;
+        const now = Date.now();
+        let store = _readStore(STORAGE_KEY) || { lastReset: now, entries: [] };
+        if((now - store.lastReset) > EXPIRY_MS){ store = { lastReset: now, entries: [] }; }
+        const entry = Object.assign({ ts: now }, rec);
+        store.entries.unshift(entry);
+        store.entries = store.entries.slice(0,50);
+        _writeStore(STORAGE_KEY, store);
+        renderPrevSearches();
+    }
+
+    function renderPrevSearches(){
+        if(!prevSearchesList) return;
+        const entries = loadPrevSearches();
+        prevSearchesList.innerHTML = '';
+        if(!entries.length){ prevSearchesList.textContent = 'No recent searches.'; return; }
+        entries.forEach((e, idx) => {
+            const el = document.createElement('div');
+            el.className = 'recent-item';
+            const label = e.q ? `${e.q}` : `${e.filters ? JSON.stringify(e.filters) : ''}`;
+            el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><div style="flex:1;">${label}</div><div style="font-size:0.85rem;color:var(--muted)">${new Date(e.ts).toLocaleTimeString()}</div></div>`;
+            el.addEventListener('click', function(){
+                applyStoredSearch(e);
+            });
+            prevSearchesList.appendChild(el);
+        });
+    }
+
+    /* Presets */
+    function loadPresets(){
+        const now = Date.now();
+        let store = _readStore(PRESET_KEY) || { lastReset: now, entries: [] };
+        if((now - store.lastReset) > EXPIRY_MS){ store = { lastReset: now, entries: [] }; _writeStore(PRESET_KEY, store); }
+        store.entries = (store.entries||[]).filter(p => (now - (p.ts||0)) <= EXPIRY_MS);
+        _writeStore(PRESET_KEY, store);
+        return store.entries;
+    }
+
+    function renderPresets(){
+        if(!presetList) return;
+        const presets = loadPresets();
+        presetList.innerHTML = '';
+        if(!presets.length){ presetList.textContent = 'No saved presets.'; return; }
+        presets.forEach((p, idx)=>{
+            const el = document.createElement('div');
+            el.className = 'recent-item';
+            el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><div style="flex:1;">Preset ${idx+1}</div><div style="display:flex;gap:.5rem"><button data-idx="${idx}" class="apply-preset">Apply</button><button data-idx="${idx}" class="del-preset">Delete</button></div></div>`;
+            presetList.appendChild(el);
+        });
+        Array.from(presetList.querySelectorAll('.apply-preset')).forEach(btn=> btn.addEventListener('click', function(){
+            const idx = Number(this.dataset.idx || 0);
+            const presets = loadPresets();
+            const p = presets[idx]; if(p) applyStoredSearch({ q: '', filters: p.filters, sort: p.sort });
+        }));
+        Array.from(presetList.querySelectorAll('.del-preset')).forEach(btn=> btn.addEventListener('click', function(){
+            const idx = Number(this.dataset.idx || 0);
+            let store = _readStore(PRESET_KEY) || { entries: [], lastReset: Date.now() };
+            store.entries.splice(idx,1);
+            _writeStore(PRESET_KEY, store);
+            renderPresets();
+        }));
+    }
+
+    function savePreset(){
+        const now = Date.now();
+        let store = _readStore(PRESET_KEY) || { lastReset: now, entries: [] };
+        if((now - store.lastReset) > EXPIRY_MS){ store = { lastReset: now, entries: [] }; }
+        const preset = { ts: now, filters: getActiveFilters(), sort: sortSelect?.value || '' };
+        store.entries.unshift(preset);
+        store.entries = store.entries.slice(0,20);
+        _writeStore(PRESET_KEY, store);
+        renderPresets();
+    }
+
+    function clearPresets(){
+        _writeStore(PRESET_KEY, { lastReset: Date.now(), entries: [] });
+        renderPresets();
+    }
+
+    function applyStoredSearch(e){
+        if(e.filters){
+            document.getElementById('filterForm')?.reset();
+            Array.from(document.querySelectorAll('input[name="tag"]')).forEach(cb=> cb.checked = false);
+            (e.filters.selectedTags||[]).forEach(t => {
+                const el = Array.from(document.querySelectorAll('input[name="tag"]')).find(i => i.value.toLowerCase() === t.toLowerCase());
+                if(el) el.checked = true;
+            });
+            if(priceSlider && typeof e.filters.maxPrice === 'number'){
+                priceSlider.value = e.filters.maxPrice;
+                priceValue.textContent = Number(e.filters.maxPrice).toFixed(2);
             }
+        }
+        if(e.sort && sortSelect) sortSelect.value = e.sort;
+        if(e.q !== undefined){ if(input) input.value = e.q; }
+        searchAndRender((e.q||input?.value||'').toString(), true);
+    }
 
-            function normalize(s){ return (s||'').toString().trim().toLowerCase(); }
-            function matchesQuery(p, q){
-                if(!q) return true;
-                const hay = [p.name, p.description, p.category, ...(p.tags||[])].map(normalize).join(' ');
-                return hay.includes(normalize(q));
-            }
+    /* ---------- render / search ---------- */
+    function render(list){
+        if(!productGrid) return;
+        productGrid.innerHTML = '';
+        if(!list || list.length === 0){
+            const empty = document.createElement('div');
+            empty.style.gridColumn = '1/-1';
+            empty.style.textAlign = 'center';
+            empty.style.padding = '1rem';
+            empty.textContent = 'No products found.';
+            productGrid.appendChild(empty);
+            return;
+        }
+        list.forEach(p => {
+            const isCanadian = (p.tags || []).some(t => String(t).toLowerCase() === 'canadian made');
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.innerHTML = `
+                <div class="product-image-placeholder">
+                    <img src="${p.image}" alt="${p.name}" onerror="this.parentNode.textContent='Product Image'">
+                </div>
+                <h3>${p.name}${isCanadian ? `<span class="canadian-leaf" title="Canadian made" aria-hidden="true">🍁</span>` : ''}</h3>
+                <p class="price">$${(p.price || 0).toFixed(2)}</p>
+                <p class="product-description">${p.description || ''}</p>
+                <div class="badges">${(p.tags||[]).map(t=>`<span class="badge">${t}</span>`).join(', ')}</div>
+                <div class="card-actions">
+                    ${p.url 
+                        ? `<a class="cta-button" href="${p.url}" target="_blank" rel="noopener noreferrer">Check It Out</a>` 
+                        : `<button class="cta-button" type="button">Check It Out</button>`}
+                </div>
+            `;
+            productGrid.appendChild(card);
+        });
+    }
 
-            function getActiveFilters(){
-                const maxStr = document.getElementById('priceRange')?.value || '';
-                const maxPrice = maxStr ? parseFloat(maxStr) : null;
-                const selectedTags = Array.from(document.querySelectorAll('input[name="tag"]:checked')).map(i => i.value.toLowerCase());
-                return { maxPrice, selectedTags };
-            }
+    function matchesQuery(p, q){
+        if(!q) return true;
+        const hay = [p.name, p.description, p.category, ...(p.tags||[])].map(normalize).join(' ');
+        return hay.includes(normalize(q));
+    }
 
-            function matchesFilters(p, filters){
-                const { maxPrice, selectedTags } = filters;
-                if (typeof maxPrice === 'number' && !isNaN(maxPrice)) {
-                    if (p.price > maxPrice) return false;
-                }
-                if (selectedTags.length > 0) {
-                    const productTags = (p.tags || []).map(t => t.toLowerCase());
-                    const allMatch = selectedTags.every(t => productTags.includes(t));
-                    if (!allMatch) return false;
-                }
-                return true;
-            }
+    function getActiveFilters(){
+        const maxVal = priceSlider ? priceSlider.value : (document.getElementById('priceRange')?.value || '');
+        const maxPrice = (maxVal !== '' && maxVal !== null) ? parseFloat(maxVal) : null;
+        const selectedTags = Array.from(document.querySelectorAll('input[name="tag"]:checked')).map(i => i.value.toLowerCase());
+        return { maxPrice, selectedTags };
+    }
 
-            function sampleRandom(arr, n){
-                const out = [];
-                const src = arr.slice();
-                while(out.length < n && src.length){
-                    const idx = Math.floor(Math.random() * src.length);
-                    out.push(src.splice(idx,1)[0]);
-                }
-                return out;
-            }
+    function matchesFilters(p, filters){
+        const { maxPrice, selectedTags } = filters;
+        if (typeof maxPrice === 'number' && !isNaN(maxPrice)) {
+            if (p.price > maxPrice) return false;
+        }
+        if (selectedTags.length > 0) {
+            const productTags = (p.tags || []).map(t => t.toLowerCase());
+            const allMatch = selectedTags.every(t => productTags.includes(t));
+            if (!allMatch) return false;
+        }
+        return true;
+    }
 
-            // apply a brief visual effect to the rendered cards and heading
-            function applySearchEffect(matchedCount) {
-                if (!productGrid || matchedCount === 0) return;
-                // add class to each visible card
-                const cards = productGrid.querySelectorAll('.product-card');
-                cards.forEach(c => {
-                    c.classList.add('search-success');
-                });
-                // flash heading
-                if (heading) {
-                    heading.classList.add('heading-flash');
-                }
-                // remove effect after animation completes
-                setTimeout(() => {
-                    cards.forEach(c => c.classList.remove('search-success'));
-                    if (heading) heading.classList.remove('heading-flash');
-                }, 900);
-            }
+    // search success effect
+    function applySearchEffect(matchedCount) {
+        if (!productGrid || matchedCount === 0) return;
+        const cards = productGrid.querySelectorAll('.product-card');
+        cards.forEach(c => c.classList.add('search-success'));
+        if (heading) heading.classList.add('heading-flash');
+        setTimeout(() => {
+            cards.forEach(c => c.classList.remove('search-success'));
+            if (heading) heading.classList.remove('heading-flash');
+        }, 900);
+    }
 
-            function searchAndRender(q, userInitiated = false){
-                const filters = getActiveFilters();
-                const hasFilters = (typeof filters.maxPrice === 'number' && !isNaN(filters.maxPrice)) || filters.selectedTags.length > 0;
-                
-                // If there's no query and no filters, show three random featured products
-                if(!q && !hasFilters){
-                    const featured = sampleRandom(products, 3);
-                    render(featured);
-                    if(heading) heading.textContent = 'Featured Products';
-                    // do not run search effect for initial featured display
-                    return;
-                }
+    function searchAndRender(q, userInitiated = false){
+        q = (q || '').toString();
+        const filters = getActiveFilters();
+        const hasFilters = (typeof filters.maxPrice === 'number' && !isNaN(filters.maxPrice)) || filters.selectedTags.length > 0;
 
-                // otherwise apply query + filters
-                const list = products.filter(p => matchesQuery(p, q) && matchesFilters(p, filters));
-                render(list);
-                if(heading){ heading.textContent = q ? `Results for: ${q}` : 'Featured Products'; }
-                // run effect only when user initiated the search (click/enter/apply)
-                if (userInitiated && list.length > 0) {
-                    applySearchEffect(list.length);
-                }
-            }
+        if(!q && !hasFilters){
+            const featured = sampleRandom(products, 3);
+            render(featured);
+            if(heading) heading.textContent = 'Featured Products';
+            return;
+        }
 
-            // Wire UI - mark userInitiated when user clicks/presses enter or applies filters
-            if(button){ button.addEventListener('click', (e)=>{ e.preventDefault(); searchAndRender(input?.value || '', true); }); }
-            if(input){ input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); searchAndRender(input.value, true); } }); }
+        let list = products.filter(p => matchesQuery(p, q) && matchesFilters(p, filters));
 
-            // Expose filter panel hooks
-            window.applyFiltersFromPanel = function(){ searchAndRender(input?.value || '', true); };
-            window.clearFiltersFromPanel = function(){ document.getElementById('filterForm')?.reset(); searchAndRender(input?.value || '', true); };
+        const sort = sortSelect?.value || '';
+        if(sort){
+            if(sort === 'price-asc') list.sort((a,b)=> a.price - b.price);
+            if(sort === 'price-desc') list.sort((a,b)=> b.price - a.price);
+            if(sort === 'name-asc') list.sort((a,b)=> a.name.localeCompare(b.name));
+            if(sort === 'name-desc') list.sort((a,b)=> b.name.localeCompare(a.name));
+        }
 
-            // Load from ?q=
-            const params = new URLSearchParams(location.search);
-            const q = (params.get('q')||'').trim();
-            if(q && input) input.value = q;
-            // initial load: not user initiated
-            searchAndRender(q, false);
-        })();
-        </script>
+        render(list);
+        if(heading) heading.textContent = q ? `Results for: ${q}` : 'Featured Products';
+
+        if(userInitiated){
+            // save to recent searches
+            try { savePrevSearch({ q: q || '', filters, sort }); } catch(e){ /* ignore */ }
+            if(list.length > 0) applySearchEffect(list.length);
+        }
+    }
+
+    /* ---------- UI wiring ---------- */
+
+    // Search button / Enter
+    if(button){ button.addEventListener('click', (e)=>{ e.preventDefault(); searchAndRender(input?.value || '', true); }); }
+    if(input){
+        input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); searchAndRender(input.value, true); } });
+
+        // autocomplete
+        input.addEventListener('input', function(){
+            const q = (this.value||'').toLowerCase().trim();
+            if(!q){ autocompleteList.classList.remove('open'); autocompleteList.innerHTML = ''; return; }
+            const names = products.map(p => p.name).filter(Boolean);
+            const tags = Array.from(new Set(products.flatMap(p=>p.tags||[])));
+            const pool = Array.from(new Set([...names, ...tags]));
+            const matches = pool.filter(x => x.toLowerCase().includes(q)).slice(0,8);
+            autocompleteList.innerHTML = '';
+            matches.forEach(m => {
+                const it = document.createElement('div');
+                it.className = 'autocomplete-item';
+                it.textContent = m;
+                it.addEventListener('click', ()=>{ input.value = m; autocompleteList.classList.remove('open'); searchAndRender(m, true); });
+                autocompleteList.appendChild(it);
+            });
+            if(matches.length) autocompleteList.classList.add('open'); else autocompleteList.classList.remove('open');
+        });
+
+        input.addEventListener('keydown', function(e){ if(e.key==='Escape'){ autocompleteList.classList.remove('open'); } });
+        document.addEventListener('click', function(e){ if(!e.target.closest('.search-box')) { autocompleteList.classList.remove('open'); recentDropdown.classList.remove('open'); } });
+    }
+
+    // Filter panel hooks: apply / clear called from panel script
+    window.applyFiltersFromPanel = function(){ searchAndRender(input?.value || '', true); };
+    window.clearFiltersFromPanel = function(){ 
+        document.getElementById('filterForm')?.reset(); 
+        if(priceSlider){ priceSlider.value = priceSlider.max; if(priceValue) priceValue.textContent = Number(priceSlider.value).toFixed(2); }
+        searchAndRender(input?.value || '', true); 
+    };
+
+    // Price slider init
+    if(priceSlider){
+        const prices = products.map(p=>Number(p.price)||0).filter(n=>!isNaN(n));
+        const max = Math.max(20, Math.ceil(Math.max(...prices)));
+        priceSlider.min = 0; priceSlider.max = max; priceSlider.step = 0.01; priceSlider.value = max;
+        if(priceValue) priceValue.textContent = Number(priceSlider.value).toFixed(2);
+        priceSlider.addEventListener('input', function(){ if(priceValue) priceValue.textContent = Number(this.value).toFixed(2); });
+    }
+
+    // recent dropdown
+    if(recentBtn && recentDropdown){
+        recentBtn.addEventListener('click', function(e){ e.preventDefault(); recentDropdown.classList.toggle('open'); renderRecentDropdown(); });
+    }
+    function renderRecentDropdown(){
+        if(!recentDropdown) return;
+        const entries = loadPrevSearches();
+        recentDropdown.innerHTML = '';
+        if(!entries.length) { recentDropdown.textContent = 'No recent searches.'; return; }
+        entries.slice(0,8).forEach(e=>{
+            const d = document.createElement('div'); d.className = 'recent-item'; d.textContent = e.q || JSON.stringify(e.filters||{});
+            d.addEventListener('click', ()=>{ applyStoredSearch(e); recentDropdown.classList.remove('open'); });
+            recentDropdown.appendChild(d);
+        });
+    }
+
+    if(savePresetBtn) savePresetBtn.addEventListener('click', savePreset);
+    if(clearPresetsBtn) clearPresetsBtn.addEventListener('click', clearPresets);
+    renderPrevSearches(); renderPresets();
+
+    // Expose apply/clear for panel buttons already set above
+
+    // initial load from ?q=
+    const params = new URLSearchParams(location.search);
+    const q = (params.get('q')||'').trim();
+    if(q && input) input.value = q;
+    searchAndRender(q, false);
+
+})(); 
+</script>
 </body>
 </html>
