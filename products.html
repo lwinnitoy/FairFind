@@ -61,7 +61,7 @@
         .search-box .filter-button { background:transparent; color:var(--brand); border:1px solid rgba(31,143,107,0.12); }
         .search-box { position:relative; }
         .recent-dropdown, .autocomplete-list {
-            position:absolute; top:100%; right:0; background:#fff; box-shadow:0 6px 18px rgba(0,0,0,0.08); border-radius:8px; padding:.5rem; margin-top:.5rem; width:260px; z-index:1200; display:none;
+            position:absolute; top:100%; right:0; background:#fff; box-shadow:0 6px 18px rgba(0,0,0,0.08); border-radius:8px; padding:.5rem; margin-top:.5rem; width:260px; z-index:5000; display:none;
         }
         .recent-dropdown.open, .autocomplete-list.open { display:block; }
         .autocomplete-item, .recent-item { padding:.35rem .5rem; cursor:pointer; border-radius:6px; }
@@ -191,9 +191,28 @@
             border-radius: 6px;
             padding: .15rem .4rem;
         }
+
+        /* Ambient particle canvas (subtle background atmosphere) */
+        #ambientCanvas {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            pointer-events: none;
+            z-index: 0; /* sit behind content sections but above page background */
+            opacity: 0.95; /* make very visible for testing */
+            mix-blend-mode: normal;
+            background: transparent;
+            filter: blur(0.6px) saturate(140%);
+        }
+        /* Ensure content sections sit above the canvas */
+        .header, .hero, .product-listings, footer.site-footer { position: relative; z-index: 1; }
     </style>
 </head>
 <body>
+    <canvas id="ambientCanvas" aria-hidden="true"></canvas>
     <!-- Header -->
     <header class="header">
         <div class="container">
@@ -269,16 +288,24 @@
             </select>
         </div>
 
-        <div class="filter-section">
-            <label>Previous searches</label>
-            <div id="prevSearchesList" style="max-height:140px; overflow:auto; border:1px solid #eef6f1; border-radius:8px; padding:.4rem; background:#fff"></div>
-        </div>
+
 
         <div class="filter-section">
             <label>Saved presets</label>
             <div style="display:flex; gap:.5rem; margin-bottom:.5rem;">
                 <button id="savePreset" type="button" class="btn">Save preset</button>
                 <button id="clearPresets" type="button" class="btn">Clear presets</button>
+            </div>
+            <!-- Inline preset naming UI to avoid using window.prompt (prevents native dialog title like "file://") -->
+            <div id="presetNameBox" style="display:none; margin-bottom:.5rem; padding:.4rem; border:1px solid #eef6f1; border-radius:8px; background:#fbfffb;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:.5rem;">
+                    <strong style="font-size:0.95rem;">Save Preset</strong>
+                    <div style="display:flex; gap:.4rem;">
+                        <button id="confirmSavePreset" type="button" class="btn">Save</button>
+                        <button id="cancelSavePreset" type="button" class="btn">Cancel</button>
+                    </div>
+                </div>
+                <input id="presetNameInput" type="text" placeholder="Preset name (optional)" style="width:100%; margin-top:.5rem; padding:.4rem; border-radius:6px; border:1px solid #e6f3ef;">
             </div>
             <div id="presetList" style="max-height:120px; overflow:auto; border:1px solid #eef6f1; border-radius:8px; padding:.4rem; background:#fff"></div>
         </div>
@@ -502,6 +529,12 @@
     /* ---------- helpers ---------- */
     function normalize(s){ return (s||'').toString().trim().toLowerCase(); }
 
+    function escapeHtml(str){
+        return String(str || '').replace(/[&<>"']/g, function (c) {
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+        });
+    }
+
     function sampleRandom(arr, n){
         const out = [];
         const src = arr.slice();
@@ -544,10 +577,16 @@
 
     function savePrevSearch(rec){
         if(!rec) return;
+        // only consider non-empty queries for recent searches
+        const qRaw = (rec.q || '').toString().trim();
+        if(!qRaw) return;
         const now = Date.now();
         let store = _readStore(STORAGE_KEY) || { lastReset: now, entries: [] };
         if((now - store.lastReset) > EXPIRY_MS){ store = { lastReset: now, entries: [] }; }
-        const entry = Object.assign({ ts: now }, rec);
+        // deduplicate: remove any existing entry with same query (case-insensitive)
+        const qNorm = qRaw.toLowerCase();
+        store.entries = (store.entries || []).filter(e => (e.q || '').toString().trim().toLowerCase() !== qNorm);
+        const entry = Object.assign({ ts: now }, { q: qRaw });
         store.entries.unshift(entry);
         store.entries = store.entries.slice(0,50);
         _writeStore(STORAGE_KEY, store);
@@ -555,20 +594,11 @@
     }
 
     function renderPrevSearches(){
-        if(!prevSearchesList) return;
-        const entries = loadPrevSearches();
+        // Previous searches section removed per user request.
+        // Keep function as a safe no-op to avoid breaking callers.
+        if (!prevSearchesList) return;
         prevSearchesList.innerHTML = '';
-        if(!entries.length){ prevSearchesList.textContent = 'No recent searches.'; return; }
-        entries.forEach((e, idx) => {
-            const el = document.createElement('div');
-            el.className = 'recent-item';
-            const label = e.q ? `${e.q}` : `${e.filters ? JSON.stringify(e.filters) : ''}`;
-            el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><div style="flex:1;">${label}</div><div style="font-size:0.85rem;color:var(--muted)">${new Date(e.ts).toLocaleTimeString()}</div></div>`;
-            el.addEventListener('click', function(){
-                applyStoredSearch(e);
-            });
-            prevSearchesList.appendChild(el);
-        });
+        prevSearchesList.style.display = 'none';
     }
 
     /* Presets */
@@ -587,15 +617,16 @@
         presetList.innerHTML = '';
         if(!presets.length){ presetList.textContent = 'No saved presets.'; return; }
         presets.forEach((p, idx)=>{
+            const name = p.name && p.name.trim() ? p.name : `Preset ${idx+1}`;
             const el = document.createElement('div');
             el.className = 'recent-item';
-            el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><div style="flex:1;">Preset ${idx+1}</div><div style="display:flex;gap:.5rem"><button data-idx="${idx}" class="apply-preset">Apply</button><button data-idx="${idx}" class="del-preset">Delete</button></div></div>`;
+            el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><div style="flex:1;">${escapeHtml(name)}</div><div style="display:flex;gap:.5rem"><button data-idx="${idx}" class="apply-preset">Apply</button><button data-idx="${idx}" class="del-preset">Delete</button></div></div>`;
             presetList.appendChild(el);
         });
         Array.from(presetList.querySelectorAll('.apply-preset')).forEach(btn=> btn.addEventListener('click', function(){
             const idx = Number(this.dataset.idx || 0);
             const presets = loadPresets();
-            const p = presets[idx]; if(p) applyStoredSearch({ q: '', filters: p.filters, sort: p.sort });
+            const p = presets[idx]; if(p) applyStoredSearch({ q: p.q || '', filters: p.filters, sort: p.sort });
         }));
         Array.from(presetList.querySelectorAll('.del-preset')).forEach(btn=> btn.addEventListener('click', function(){
             const idx = Number(this.dataset.idx || 0);
@@ -607,13 +638,48 @@
     }
 
     function savePreset(){
+        // Show inline preset naming UI instead of using the native prompt
+        const box = document.getElementById('presetNameBox');
+        const inputEl = document.getElementById('presetNameInput');
+        if(!box) return;
+        box.style.display = 'block';
+        // Clear the input but avoid focusing immediately (which can trigger unwanted scrolling).
+        if(inputEl){ inputEl.value = ''; }
+        // Ensure the filter panel scrolls to show the newly revealed preset UI.
+        try{
+            const panelEl = document.getElementById('filterPanel');
+            const boxEl = document.getElementById('presetNameBox');
+            if(panelEl){
+                // Immediately set scrollTop without smooth behavior to avoid jumpy animations.
+                try{
+                    const prev = panelEl.style.scrollBehavior;
+                    panelEl.style.scrollBehavior = 'auto';
+                    panelEl.scrollTop = panelEl.scrollHeight;
+                    // Small timeout to handle layout, then re-apply scrollTop and restore behavior.
+                    setTimeout(()=>{
+                        try{ panelEl.scrollTop = panelEl.scrollHeight; } catch(e){}
+                        panelEl.style.scrollBehavior = prev || '';
+                        // Focus the input without allowing the browser to auto-scroll on focus
+                        try{ if(inputEl && typeof inputEl.focus === 'function') inputEl.focus({ preventScroll: true }); } catch(e){ if(inputEl) inputEl.focus(); }
+                    }, 80);
+                    // One more safety attempt slightly later to lock position
+                    setTimeout(()=>{ try{ panelEl.scrollTop = panelEl.scrollHeight; } catch(e){} }, 240);
+                }catch(e){ /* ignore */ }
+            }
+        }catch(e){ /* ignore */ }
+    }
+
+    function finalizeSavePreset(name){
         const now = Date.now();
         let store = _readStore(PRESET_KEY) || { lastReset: now, entries: [] };
         if((now - store.lastReset) > EXPIRY_MS){ store = { lastReset: now, entries: [] }; }
-        const preset = { ts: now, filters: getActiveFilters(), sort: sortSelect?.value || '' };
+        const active = getActiveFilters();
+        const preset = { ts: now, name: (name||'').toString().trim(), filters: { selectedTags: active.selectedTags, maxPrice: active.maxPrice }, sort: sortSelect?.value || '' };
         store.entries.unshift(preset);
         store.entries = store.entries.slice(0,20);
         _writeStore(PRESET_KEY, store);
+        // hide box and re-render
+        const box = document.getElementById('presetNameBox'); if(box) box.style.display = 'none';
         renderPresets();
     }
 
@@ -636,8 +702,11 @@
             }
         }
         if(e.sort && sortSelect) sortSelect.value = e.sort;
-        if(e.q !== undefined){ if(input) input.value = e.q; }
-        searchAndRender((e.q||input?.value||'').toString(), true);
+        // Only overwrite the current query if the preset explicitly stored a non-empty query
+        const presetHasQ = (typeof e.q === 'string') && e.q.trim() !== '';
+        if(presetHasQ && input) input.value = e.q;
+        const queryToUse = presetHasQ ? e.q : (input?.value || '');
+        searchAndRender(queryToUse.toString(), true);
     }
 
     /* ---------- render / search ---------- */
@@ -739,8 +808,11 @@
         if(heading) heading.textContent = q ? `Results for: ${q}` : 'Featured Products';
 
         if(userInitiated){
-            // save to recent searches
-            try { savePrevSearch({ q: q || '', filters, sort }); } catch(e){ /* ignore */ }
+            // save only non-empty search terms to recent searches (do not save tag-only searches)
+            try {
+                const qTrim = (q || '').toString().trim();
+                if (qTrim) savePrevSearch({ q: qTrim });
+            } catch(e){ /* ignore */ }
             if(list.length > 0) applySearchEffect(list.length);
         }
     }
@@ -801,8 +873,26 @@
         const entries = loadPrevSearches();
         recentDropdown.innerHTML = '';
         if(!entries.length) { recentDropdown.textContent = 'No recent searches.'; return; }
+
+        function prettyLabel(e){
+            if(e && typeof e.q === 'string' && e.q.trim()) return e.q;
+            if(e && e.filters){
+                const parts = [];
+                if(Array.isArray(e.filters.selectedTags) && e.filters.selectedTags.length){
+                    parts.push('tags: ' + e.filters.selectedTags.join(', '));
+                }
+                if(typeof e.filters.maxPrice === 'number' && !isNaN(e.filters.maxPrice)){
+                    parts.push('max $' + Number(e.filters.maxPrice).toFixed(2));
+                }
+                if(parts.length) return parts.join(' | ');
+            }
+            return '(recent search)';
+        }
+
         entries.slice(0,8).forEach(e=>{
-            const d = document.createElement('div'); d.className = 'recent-item'; d.textContent = e.q || JSON.stringify(e.filters||{});
+            const d = document.createElement('div');
+            d.className = 'recent-item';
+            d.textContent = prettyLabel(e);
             d.addEventListener('click', ()=>{ applyStoredSearch(e); recentDropdown.classList.remove('open'); });
             recentDropdown.appendChild(d);
         });
@@ -810,6 +900,26 @@
 
     if(savePresetBtn) savePresetBtn.addEventListener('click', savePreset);
     if(clearPresetsBtn) clearPresetsBtn.addEventListener('click', clearPresets);
+
+    // Inline preset name confirm/cancel wiring (replaces window.prompt to avoid native dialog title)
+    const confirmSaveBtn = document.getElementById('confirmSavePreset');
+    const cancelSaveBtn = document.getElementById('cancelSavePreset');
+    const presetNameInput = document.getElementById('presetNameInput');
+    if(confirmSaveBtn){
+        confirmSaveBtn.addEventListener('click', function(){
+            const name = presetNameInput ? (presetNameInput.value || '').toString().trim() : '';
+            finalizeSavePreset(name);
+        });
+    }
+    if(cancelSaveBtn){
+        cancelSaveBtn.addEventListener('click', function(){
+            const box = document.getElementById('presetNameBox'); if(box) box.style.display = 'none';
+        });
+    }
+    if(presetNameInput){
+        presetNameInput.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); const name = (this.value||'').toString().trim(); finalizeSavePreset(name); } if(e.key === 'Escape'){ const box = document.getElementById('presetNameBox'); if(box) box.style.display = 'none'; } });
+    }
+
     renderPrevSearches(); renderPresets();
 
     // Expose apply/clear for panel buttons already set above
@@ -821,6 +931,202 @@
     searchAndRender(q, false);
 
 })(); 
+</script>
+<!-- Ambient particles script: lightweight canvas-based ambient motion -->
+<script>
+(function(){
+    const canvas = document.getElementById('ambientCanvas');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let dpr = Math.max(1, window.devicePixelRatio || 1);
+
+    function resize(){
+        dpr = Math.max(1, window.devicePixelRatio || 1);
+        canvas.width = Math.floor(window.innerWidth * dpr);
+        canvas.height = Math.floor(window.innerHeight * dpr);
+        canvas.style.width = window.innerWidth + 'px';
+        canvas.style.height = window.innerHeight + 'px';
+        try{ ctx.setTransform(dpr,0,0,dpr,0,0); } catch(e){}
+    }
+
+    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Make particles much more abundant for testing. Values chosen per screen size.
+    const baseCount = reduced
+        ? (window.innerWidth > 1200 ? 80 : (window.innerWidth > 800 ? 60 : 40))
+        : (window.innerWidth > 1200 ? 400 : (window.innerWidth > 800 ? 280 : 160));
+    const particles = [];
+    let currentCount = baseCount;
+
+    // simple FPS monitor to throttle particle count if rendering is too slow
+    let fpsFrameCount = 0;
+    let fpsLastTime = performance.now();
+    let lastFps = 60;
+
+    // pointer state for interaction
+    const pointer = { x: -9999, y: -9999, down: false, lastMove: 0 };
+    // small ignore window after focus/visibility changes to avoid synthetic
+    // mousemove events causing a sudden burst of forces when tabbing back in
+    let pointerIgnoreUntil = 0;
+
+    // interaction tuning (feel free to tweak)
+    const influenceRadius = Math.max(120, Math.min(window.innerWidth * 0.18, 300));
+    const basePush = reduced ? 0.9 : 2.6; // multiplier for push strength
+    const dragWhenDown = 1.6; // multiplier when mouse is pressed/dragging
+
+    function rand(min, max){ return Math.random() * (max - min) + min; }
+
+    function createParticles(count = baseCount){
+        particles.length = 0;
+        const useCount = typeof count === 'number' ? count : baseCount;
+        for(let i=0;i<useCount;i++){
+            particles.push({
+                x: rand(0, window.innerWidth),
+                y: rand(0, window.innerHeight),
+                r: rand(0.2, 0.3),
+                vx: rand(-0.12, 0.12),
+                vy: reduced ? 0 : rand(-0.28, -0.06),
+                a: rand(0.06, 0.26),
+                hue: rand(130, 190)
+            });
+        }
+    }
+
+    function applyPointerForces(){
+        // skip when pointer is far away to save cycles
+        const now = Date.now();
+        if(now - pointer.lastMove > 400 && !pointer.down) return;
+        for(const p of particles){
+            const dx = p.x - pointer.x;
+            const dy = p.y - pointer.y;
+            const dist = Math.sqrt(dx*dx + dy*dy) || 0.0001;
+            if(dist < influenceRadius){
+                // force falls off with distance (linear falloff)
+                const fall = (influenceRadius - dist) / influenceRadius;
+                const strength = basePush * fall * (pointer.down ? dragWhenDown : 1);
+                // normalize direction away from pointer
+                const nx = dx / dist;
+                const ny = dy / dist;
+                // apply impulse to velocity
+                p.vx += nx * strength * 0.12;
+                p.vy += ny * strength * 0.12;
+                // limit velocity to reasonable bounds for stability
+                p.vx = Math.max(Math.min(p.vx, 2.2), -2.2);
+                p.vy = Math.max(Math.min(p.vy, 2.2), -2.2);
+            }
+        }
+    }
+
+    function draw(){
+        try{ ctx.clearRect(0,0, canvas.width, canvas.height); } catch(e){}
+        const w = window.innerWidth; const h = window.innerHeight;
+        for(const p of particles){
+            // gradient soft glow
+            const gx = p.x; const gy = p.y; const radius = Math.max(8, p.r * 6);
+            const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, radius);
+            g.addColorStop(0, `hsla(${p.hue},60%,66%,${p.a})`);
+            g.addColorStop(1, `hsla(${p.hue},60%,55%,0)`);
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(gx, gy, radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    let raf = null;
+    function step(){
+        const w = window.innerWidth; const h = window.innerHeight;
+        // apply pointer forces before updating positions
+        if(!reduced) applyPointerForces();
+        for(const p of particles){
+            p.x += p.vx;
+            p.y += p.vy;
+            // small friction so velocities calm down over time
+            p.vx *= 0.998; // slightly less decay so motion persists
+            p.vy *= 0.998;
+            // wrap-around
+            if(p.x < -60) p.x = w + 60;
+            if(p.x > w + 60) p.x = -60;
+            if(p.y < -120) p.y = h + 120;
+            if(p.y > h + 120) p.y = -120;
+        }
+        draw();
+
+        // fps monitoring
+        fpsFrameCount++;
+        const now = performance.now();
+        const dt = now - fpsLastTime;
+        if(dt >= 1000){
+            lastFps = Math.round((fpsFrameCount * 1000) / dt);
+            fpsFrameCount = 0;
+            fpsLastTime = now;
+            // if fps drops too low, reduce particle count to improve performance
+            if(lastFps < 22 && currentCount > 60){
+                currentCount = Math.max(60, Math.floor(currentCount / 2));
+                createParticles(currentCount);
+            }
+            // if fps is healthy and we previously reduced, slowly restore up to baseCount
+            if(lastFps > 40 && currentCount < baseCount){
+                currentCount = Math.min(baseCount, currentCount + Math.floor(baseCount * 0.15));
+                createParticles(currentCount);
+            }
+        }
+
+        raf = requestAnimationFrame(step);
+    }
+
+    // pointer event handling (mouse + touch)
+    function setPointer(x, y){
+        // ignore any pointer updates until the ignore window expires
+        try{
+            const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+            if(now < pointerIgnoreUntil) return;
+        }catch(e){}
+        pointer.x = x; pointer.y = y; pointer.lastMove = Date.now();
+    }
+
+    // Use window-level listeners so the canvas can remain pointer-events:none
+    window.addEventListener('mousemove', function(e){
+        const rect = canvas.getBoundingClientRect();
+        setPointer(e.clientX - rect.left, e.clientY - rect.top);
+    });
+    // when mouse leaves the window, clear pointer
+    window.addEventListener('mouseout', function(e){ if(!e.relatedTarget) { pointer.x = -9999; pointer.y = -9999; } });
+    window.addEventListener('mousedown', function(e){ pointer.down = true; const rect = canvas.getBoundingClientRect(); setPointer(e.clientX - rect.left, e.clientY - rect.top); });
+    window.addEventListener('mouseup', function(){ pointer.down = false; });
+
+    // touch support on window/document
+    window.addEventListener('touchstart', function(e){
+        const t = e.touches[0]; if(!t) return;
+        pointer.down = true;
+        const rect = canvas.getBoundingClientRect();
+        setPointer(t.clientX - rect.left, t.clientY - rect.top);
+    }, { passive: true });
+    window.addEventListener('touchmove', function(e){
+        const t = e.touches[0]; if(!t) return;
+        const rect = canvas.getBoundingClientRect();
+        setPointer(t.clientX - rect.left, t.clientY - rect.top);
+    }, { passive: true });
+    window.addEventListener('touchend', function(){ pointer.down = false; });
+
+    // Clear and briefly ignore pointer input when page visibility/focus changes
+    function clearAndIgnorePointer(ms){
+        pointer.x = -9999; pointer.y = -9999; pointer.down = false;
+        try{ pointerIgnoreUntil = (typeof performance !== 'undefined' && performance.now) ? performance.now() + (ms || 300) : Date.now() + (ms || 300); }catch(e){ pointerIgnoreUntil = Date.now() + (ms || 300); }
+    }
+
+    window.addEventListener('blur', function(){ clearAndIgnorePointer(250); });
+    window.addEventListener('focus', function(){ clearAndIgnorePointer(350); });
+    document.addEventListener('visibilitychange', function(){ if(document.hidden) clearAndIgnorePointer(250); else clearAndIgnorePointer(350); });
+
+    // initialize
+    resize(); createParticles(currentCount);
+    window.addEventListener('resize', function(){ resize(); createParticles(currentCount); });
+
+    if(!reduced) { step(); } else { draw(); }
+
+    // cleanup
+    window.addEventListener('pagehide', function(){ if(raf) cancelAnimationFrame(raf); });
+})();
 </script>
 </body>
 </html>
