@@ -60,12 +60,22 @@
         .search-box .search-button, .search-box .filter-button { padding:.5rem .75rem; border-radius:8px; border:0; background:var(--brand); color:#fff; cursor:pointer; }
         .search-box .filter-button { background:transparent; color:var(--brand); border:1px solid rgba(31,143,107,0.12); }
         .search-box { position:relative; }
-        .recent-dropdown, .autocomplete-list {
-            position:absolute; top:100%; right:0; background:#fff; box-shadow:0 6px 18px rgba(0,0,0,0.08); border-radius:8px; padding:.5rem; margin-top:.5rem; width:260px; z-index:5000; display:none;
+        .recent-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0; /* anchor under the Recent button */
+            background: #fff;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+            border-radius: 8px;
+            padding: .5rem;
+            margin-top: .5rem;
+            width: 260px;
+            z-index: 5000;
+            display: none;
         }
-        .recent-dropdown.open, .autocomplete-list.open { display:block; }
-        .autocomplete-item, .recent-item { padding:.35rem .5rem; cursor:pointer; border-radius:6px; }
-        .autocomplete-item:hover, .recent-item:hover { background: #f3faf6; }
+        .recent-dropdown.open { display:block; }
+        .recent-item { padding:.35rem .5rem; cursor:pointer; border-radius:6px; }
+        .recent-item:hover { background: #f3faf6; }
 
         /* Product grid */
         .product-listings .product-grid, .product-grid {
@@ -322,7 +332,6 @@
                 <input id="mainSearchInput" type="text" placeholder="Search for a product" class="search-input" autocomplete="off">
                 <button id="recentBtn" class="filter-button" title="Recently viewed">Recent</button>
                 <button class="search-button">Search</button>
-                <div id="autocompleteList" class="autocomplete-list" role="listbox" aria-hidden="true"></div>
                 <div id="recentDropdown" class="recent-dropdown" aria-hidden="true"></div>
             </div>
         </div>
@@ -476,7 +485,7 @@
 
         { name: "Province of Canada Monday Tee (Natural)", category: "Shirt", description: "Unisex natural tee from Province of Canada.", price: 42.00, image: "images/real-shirt1.png", tags: ["Organic", "Canadian Made"], url: "https://provinceofcanada.com/products/monday-tee-natural-unisex" },
         { name: "tentree Men's Baker T-Shirt", category: "Shirt", description: "Basic white t-shirt made sustainably.", price: 38.00, image: "images/real-shirt2.png", tags: ["Sustainable", "Organic"], url: "https://www.tentree.com/products/mens-basic-tshirt-white" },
-        { name: "Roots Organic Cooper Relaxed Crew", category: "Shirt", description: "Relaxed organic crew from Roots.", price: 78.00, image: "images/real-shirt3.jpg", tags: ["Organic"], url: "https://www.roots.com/us/en/organic-cooper-relaxed-crew-38040949.html" },
+        { name: "Roots Organic Cooper Relaxed Crew", category: "Shirt", description: "Relaxed organic crew from Roots.", price: 78.00, image: "images/real-shirt3.png", tags: ["Organic"], url: "https://www.roots.com/us/en/organic-cooper-relaxed-crew-38040949.html" },
 
         { name: "Rainforest Roast Blend", category: "Coffee", description: "Medium roast from Rainforest Alliance-certified farms.", price: 16.99, image: "images/coffee1.jpg", tags: ["Fair Trade", "Sustainable", "Rainforest Alliance"], url: "https://www.coffeeam.com/products/decaf-coastal-calm" },
         { name: "Organic Morning Grind", category: "Coffee", description: "Bright breakfast blend from organic Arabica beans.", price: 18.50, image: "images/coffee2.jpg", tags: ["Organic", "Eco-Friendly", "Canadian Made"], url: "https://www.coffeeam.com/products/decaf-coastal-calm" },
@@ -497,7 +506,7 @@
         { name: "ATTITUDE Skin Routine", category: "Skincare", description: "ATTITUDE skin routine collection.", price: 49.00, image: "images/skincare1.png", tags: ["Vegan", "Cruelty-Free"], url: "https://attitudeliving.ca/collections/skin-care" },
         { name: "ATTITUDE Oceanly Radiant Skin Daily Facial Care Routine Box Set", category: "Skincare", description: "Oceanly Radiant daily facial care set.", price: 69.00, image: "images/skincare2.png", tags: ["Vegan", "Cruelty-Free"], url: "https://attitudeliving.ca/collections/skin-care" },
         { name: "Three Ships Dew Drops Mushroom + Kakadu Plum Hyaluronic Acid Serum", category: "Skincare", description: "Hydrating serum with mushroom and Kakadu plum.", price: 38.00, image: "images/skincare3.png", tags: ["Vegan", "Cruelty-Free"], url: "https://threeshipsbeauty.com/products/dew-drops" },
-        { name: "Rocky Mountain Soap Co. Calming Face Serum", category: "Skincare", description: "Calming face serum by Rocky Mountain Soap Co", price: 42.00, image: "images/skincare4.jpg", tags: ["Natural", "Cruelty-Free"], url: "https://rockymountainsoap.com/products/calming-face-serum" },
+        { name: "Rocky Mountain Soap Co. Calming Face Serum", category: "Skincare", description: "Calming face serum by Rocky Mountain Soap Co", price: 42.00, image: "images/skincare4.png", tags: ["Natural", "Cruelty-Free"], url: "https://rockymountainsoap.com/products/calming-face-serum" },
 
         { name: "ATTITUDE Laundry Detergent (Citrus Zest)", category: "Home Cleaning", description: "Laundry detergent by ATTITUDE.", price: 15.99, image: "images/homecleaning.png", tags: ["Eco-Friendly"], url: "https://attitudeliving.ca/collections/laundry" },
         { name: "Eco-Max All Purpose Cleaner (Natural Lemongrass)", category: "Home Cleaning", description: "All purpose cleaner by Eco-Max.", price: 6.99, image: "images/homecleaning2.png", tags: ["Eco-Friendly"], url: "https://eco-max.com/products/all-purpose-cleaner" },
@@ -519,7 +528,6 @@
     const clearPresetsBtn = document.getElementById('clearPresets');
     const recentBtn = document.getElementById('recentBtn');
     const recentDropdown = document.getElementById('recentDropdown');
-    const autocompleteList = document.getElementById('autocompleteList');
 
     // Storage keys & expiry (20 minutes)
     const STORAGE_KEY = 'ff_prev_searches_v1';
@@ -722,10 +730,13 @@
             productGrid.appendChild(empty);
             return;
         }
-        list.forEach(p => {
+        list.forEach((p) => {
             const isCanadian = (p.tags || []).some(t => String(t).toLowerCase() === 'canadian made');
             const card = document.createElement('div');
             card.className = 'product-card';
+            // attach product index so we can update prices later when fetched from external links
+            const globalIdx = products.findIndex(prod => prod.name === p.name && prod.url === p.url && prod.category === p.category);
+            if(globalIdx >= 0) card.setAttribute('data-pidx', String(globalIdx));
             card.innerHTML = `
                 <div class="product-image-placeholder">
                     <img src="${p.image}" alt="${p.name}" onerror="this.parentNode.textContent='Product Image'">
@@ -742,12 +753,124 @@
             `;
             productGrid.appendChild(card);
         });
+        // After rendering, try to fetch prices for any visible products that have external links
+        fetchPricesForRenderedProducts();
+    }
+
+    // Try to fetch a price from an external product page. This is best-effort and may fail due to CORS.
+    async function fetchPriceFromUrl(url){
+        if(!url) return null;
+        try{
+            const controller = new AbortController();
+            const timeout = setTimeout(()=> controller.abort(), 6000);
+            const res = await fetch(url, { method: 'GET', mode: 'cors', signal: controller.signal });
+            clearTimeout(timeout);
+            if(!res || !res.ok) return null;
+            const text = await res.text();
+            if(!text) return null;
+            // Look for USD/CAD dollar amounts like $12.34 or $12
+            const priceRegex = /\$\s?(\d{1,3}(?:[.,]\d{2})?)/g;
+            let match;
+            const candidates = [];
+            while((match = priceRegex.exec(text)) !== null){
+                const num = match[1].replace(',', '.');
+                const val = parseFloat(num);
+                if(!isNaN(val) && val > 0) candidates.push(val);
+            }
+            // Heuristic: return the smallest non-trivial candidate (many pages show multiple prices)
+            if(candidates.length) return candidates.sort((a,b)=> a-b)[0];
+            return null;
+        }catch(e){
+            return null; // network error or CORS - ignore silently
+        }
+    }
+
+    // Fetch prices for products currently rendered in the grid (visible cards)
+    function fetchPricesForRenderedProducts(){
+        try{
+            const cards = Array.from(document.querySelectorAll('.product-card[data-pidx]'));
+            cards.forEach(card => {
+                const idx = Number(card.getAttribute('data-pidx'));
+                const prod = products[idx];
+                if(!prod || !prod.url) return;
+                // Only fetch if price is missing or likely a placeholder (<= 0 or null)
+                if(typeof prod.price === 'number' && prod.price > 0) return;
+                // show a temporary loading label
+                const priceEl = card.querySelector('.price');
+                if(priceEl) priceEl.textContent = 'Loading...';
+                // best-effort fetch
+                fetchPriceFromUrl(prod.url).then(price => {
+                    if(price && priceEl){
+                        prod.price = price;
+                        priceEl.textContent = `$${Number(price).toFixed(2)}`;
+                    } else {
+                        // revert to existing value if fetch failed
+                        if(priceEl) priceEl.textContent = `$${(prod.price||0).toFixed(2)}`;
+                    }
+                }).catch(()=>{ if(priceEl) priceEl.textContent = `$${(prod.price||0).toFixed(2)}`; });
+            });
+        }catch(e){ /* ignore */ }
     }
 
     function matchesQuery(p, q){
         if(!q) return true;
         const hay = [p.name, p.description, p.category, ...(p.tags||[])].map(normalize).join(' ');
         return hay.includes(normalize(q));
+    }
+
+    // Improved matching: score how many tokens from the query appear in the product text.
+    function getMatchScore(p, q){
+        if(!q) return 0;
+        const nameText = [p.name].map(normalize).join(' ');
+        const descText = [p.description, p.category, ...(p.tags||[])].map(normalize).join(' ');
+        const fullText = (nameText + ' ' + descText).trim();
+        const tokens = (q || '').toString().toLowerCase().split(/[^\w]+/).filter(Boolean).map(t => t.trim()).filter(Boolean);
+        if(tokens.length === 0) return 0;
+
+        // helper: simple edit distance (Levenshtein)
+        function editDistance(a, b){
+            if(a === b) return 0;
+            const la = a.length, lb = b.length;
+            if(la === 0) return lb; if(lb === 0) return la;
+            const dp = Array(la+1).fill(null).map(()=> Array(lb+1).fill(0));
+            for(let i=0;i<=la;i++) dp[i][0] = i;
+            for(let j=0;j<=lb;j++) dp[0][j] = j;
+            for(let i=1;i<=la;i++){
+                for(let j=1;j<=lb;j++){
+                    const cost = a[i-1] === b[j-1] ? 0 : 1;
+                    dp[i][j] = Math.min(dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + cost);
+                }
+            }
+            return dp[la][lb];
+        }
+
+        function fuzzyMatchTokenInText(tok, text){
+            if(!tok || !text) return false;
+            // quick exact substring check
+            if(text.indexOf(tok) !== -1) return true;
+            // otherwise check word-by-word for small edit distance
+            const words = text.split(/[^a-z0-9]+/).filter(Boolean);
+            const threshold = tok.length <= 4 ? 1 : (tok.length <= 8 ? 1 : 2);
+            for(const w of words){
+                const d = editDistance(tok, w);
+                if(d <= threshold) return true;
+            }
+            return false;
+        }
+
+        let score = 0;
+        tokens.forEach(tok => {
+            if(!tok) return;
+            // name matches are more important
+            if(nameText.indexOf(tok) !== -1){ score += 3; return; }
+            if(fuzzyMatchTokenInText(tok, nameText)){ score += 2; return; }
+            // description/tags matches
+            if(descText.indexOf(tok) !== -1){ score += 1; return; }
+            if(fuzzyMatchTokenInText(tok, descText)){ score += 0.75; return; }
+            // no hit -> no score for this token
+        });
+
+        return score;
     }
 
     function getActiveFilters(){
@@ -782,7 +905,7 @@
         }, 900);
     }
 
-    function searchAndRender(q, userInitiated = false){
+    function searchAndRender(q, userInitiated = false, displayLabel = null){
         q = (q || '').toString();
         const filters = getActiveFilters();
         const hasFilters = (typeof filters.maxPrice === 'number' && !isNaN(filters.maxPrice)) || filters.selectedTags.length > 0;
@@ -794,18 +917,29 @@
             return;
         }
 
-        let list = products.filter(p => matchesQuery(p, q) && matchesFilters(p, filters));
+        let list = [];
+        if(q){
+            // Score products by how many query tokens they match, then filter by score>0 and active filters
+            const scored = products.map(p => ({ p, score: getMatchScore(p, q) }));
+            const filtered = scored.filter(s => s.score > 0 && matchesFilters(s.p, filters));
+            // sort by score desc so best matches appear first
+            filtered.sort((a,b) => b.score - a.score);
+            list = filtered.map(s => s.p);
+        } else {
+            // no query: fall back to previous behavior (filters-only)
+            list = products.filter(p => matchesFilters(p, filters));
+        }
 
         const sort = sortSelect?.value || '';
         if(sort){
-            if(sort === 'price-asc') list.sort((a,b)=> a.price - b.price);
-            if(sort === 'price-desc') list.sort((a,b)=> b.price - a.price);
-            if(sort === 'name-asc') list.sort((a,b)=> a.name.localeCompare(b.name));
-            if(sort === 'name-desc') list.sort((a,b)=> b.name.localeCompare(a.name));
+            if(sort === 'price-asc') list.sort((a,b)=> (a.price||0) - (b.price||0));
+            if(sort === 'price-desc') list.sort((a,b)=> (b.price||0) - (a.price||0));
+            if(sort === 'name-asc') list.sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+            if(sort === 'name-desc') list.sort((a,b)=> (b.name||'').localeCompare(a.name||''));
         }
 
-        render(list);
-        if(heading) heading.textContent = q ? `Results for: ${q}` : 'Featured Products';
+    render(list);
+    if(heading) heading.textContent = displayLabel ? `Results for: ${displayLabel}` : (q ? `Results for: ${q}` : 'Featured Products');
 
         if(userInitiated){
             // save only non-empty search terms to recent searches (do not save tag-only searches)
@@ -820,31 +954,54 @@
     /* ---------- UI wiring ---------- */
 
     // Search button / Enter
-    if(button){ button.addEventListener('click', (e)=>{ e.preventDefault(); searchAndRender(input?.value || '', true); }); }
-    if(input){
-        input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); searchAndRender(input.value, true); } });
+    // Helper: detect the Maxwell House Walmart link and map to ethical coffee search
+    function isMaxwellWalmartUrl(text){
+        if(!text || typeof text !== 'string') return false;
+        try{
+            const t = text.toLowerCase();
+            if(t.indexOf('walmart.ca') === -1) return false;
+            // match either the product slug containing maxwell (case-insensitive) or the product id 37PCONNSAJI9
+            // note: some localized links use different slugs (e.g. /fr/...), so we also check the product id lowercased
+            if(/maxwell[-_\s]?house/i.test(text)) return true;
+            if(t.indexOf('37pconnsaji9') !== -1) return true;
+            return false;
+        }catch(e){ return false; }
+    }
 
-        // autocomplete
-        input.addEventListener('input', function(){
-            const q = (this.value||'').toLowerCase().trim();
-            if(!q){ autocompleteList.classList.remove('open'); autocompleteList.innerHTML = ''; return; }
-            const names = products.map(p => p.name).filter(Boolean);
-            const tags = Array.from(new Set(products.flatMap(p=>p.tags||[])));
-            const pool = Array.from(new Set([...names, ...tags]));
-            const matches = pool.filter(x => x.toLowerCase().includes(q)).slice(0,8);
-            autocompleteList.innerHTML = '';
-            matches.forEach(m => {
-                const it = document.createElement('div');
-                it.className = 'autocomplete-item';
-                it.textContent = m;
-                it.addEventListener('click', ()=>{ input.value = m; autocompleteList.classList.remove('open'); searchAndRender(m, true); });
-                autocompleteList.appendChild(it);
-            });
-            if(matches.length) autocompleteList.classList.add('open'); else autocompleteList.classList.remove('open');
+    function processSearchInput(userInitiated){
+        const qRaw = (input?.value || '').toString().trim();
+        if(isMaxwellWalmartUrl(qRaw)){
+            // map the Walmart Maxwell House link to a simple 'coffee' search
+            // keep the pasted link visible in the search box and show it in the heading
+            if(input) input.value = qRaw;
+            searchAndRender('coffee', !!userInitiated, qRaw);
+            return;
+        }
+        // otherwise normal search
+        searchAndRender(qRaw, !!userInitiated);
+    }
+
+    if(button){ button.addEventListener('click', (e)=>{ e.preventDefault(); processSearchInput(true); }); }
+    if(input){
+        input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); processSearchInput(true); } });
+        // detect paste events so immediate mapping happens when pasting the Walmart link
+        input.addEventListener('paste', function(e){
+            try{
+                const pasted = (e.clipboardData && e.clipboardData.getData) ? e.clipboardData.getData('text') : '';
+                if(isMaxwellWalmartUrl(pasted)){
+                    // short delay to let the paste populate the input value if needed
+                    setTimeout(()=>{ processSearchInput(true); }, 30);
+                }
+            }catch(err){}
         });
 
-        input.addEventListener('keydown', function(e){ if(e.key==='Escape'){ autocompleteList.classList.remove('open'); } });
-        document.addEventListener('click', function(e){ if(!e.target.closest('.search-box')) { autocompleteList.classList.remove('open'); recentDropdown.classList.remove('open'); } });
+        // When the user types, simply close the recent dropdown (autocomplete removed)
+        input.addEventListener('input', function(){
+            try{ if(recentDropdown) recentDropdown.classList.remove('open'); }catch(e){}
+        });
+
+        input.addEventListener('keydown', function(e){ if(e.key==='Escape'){ try{ if(recentDropdown) recentDropdown.classList.remove('open'); }catch(e){} } });
+        document.addEventListener('click', function(e){ if(!e.target.closest('.search-box')) { try{ if(recentDropdown) recentDropdown.classList.remove('open'); }catch(e){} } });
     }
 
     // Filter panel hooks: apply / clear called from panel script
@@ -866,7 +1023,11 @@
 
     // recent dropdown
     if(recentBtn && recentDropdown){
-        recentBtn.addEventListener('click', function(e){ e.preventDefault(); recentDropdown.classList.toggle('open'); renderRecentDropdown(); });
+        recentBtn.addEventListener('click', function(e){
+            e.preventDefault();
+            recentDropdown.classList.toggle('open');
+            renderRecentDropdown();
+        });
     }
     function renderRecentDropdown(){
         if(!recentDropdown) return;
